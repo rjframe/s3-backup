@@ -52,8 +52,7 @@ def main():
             # TODO: Implement individual uploads
             pass
     except:
-        pass # TODO: Handle exceptions 
-        raise
+        raise # TODO: Handle exceptions 
 
 def read_file_list(flist):
     """Reads and returns the list of files in the file specified by
@@ -71,7 +70,7 @@ def create_archive(files):
         if not os.path.exists(config.dest_location):
             os.makedirs(config.dest_location)
     except OSError:
-        pass # TODO: Code exception handling
+        raise # TODO: Code exception handling
     
     archive_type = '.tar'
     mode = 'w:'
@@ -89,10 +88,9 @@ def create_archive(files):
                 if os.path.exists(f.strip()):
                     tar.add(f.strip())
     except tarfile.CompressionError:
-        pass # TODO: Handle
+        raise # TODO: Handle
     except tarfile.TarError:
-        pass # TODO: Handle
-        print('Tar error.')
+        raise # TODO: Handle
 
     return archive_name, archive_type
 

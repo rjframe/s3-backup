@@ -18,7 +18,7 @@
 # Schedule via cron (win: Task Manager) (see README) TODO: Instructions in
                                                             # Readme
 
-# TODO: Place these in /etc/s3backup.cfg or ~/.s3backup/s3backup.cfg
+# TODO: Place these in /etc/s3backup.cfg or ~/.s3backup.cfg
 # TODO: Logging
 # TODO: Test with symbolic links (probably have a couple of issues)
 # TODO: Test on Windows
@@ -34,8 +34,11 @@ aws_secret_access_key = ''
 # BEGIN aws configuration
 
 # Enter client's info here
-bucket = 'test_bucket'
-machine_name = 'test1'
+bucket = 'mybucket'
+machine_name = 'machine1'
+
+# Note: boto uses TSL by default; we're not going to allow turning it off
+# use_tls = True
 
 # END aws configuration
 
@@ -45,7 +48,7 @@ machine_name = 'test1'
 # If base_dir is specified, the others are relative to it; if it is None,
 # the others need to be absolute paths
 
-base_dir = '/home/rjframe/code/simplify/simplifybackup/test_env'
+base_dir = '/home/user/backup'
 daily_backup_list = os.path.join(base_dir, 'daily.s3')
 weekly_backup_list = os.path.join(base_dir, 'weekly.s3')
 monthly_backup_list = os.path.join(base_dir, 'monthly.s3')

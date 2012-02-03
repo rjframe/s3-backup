@@ -21,14 +21,17 @@ import sys
 import argparse
 import tarfile
 import time
-import shutil
+from shutil import rmtree
 
 import config
+import log
 import s3put
 
 parser = argparse.ArgumentParser(description='''Creates archives of files
         according to a cron-determined schedule.''')
 parser.add_argument('schedule', choices=['daily', 'weekly', 'monthly'])
+
+log = log.get_logger('s3backup')
 
 
 def main():
@@ -47,12 +50,14 @@ def main():
             path, tar_type = create_archive(files)
             send_file(path, tar_type, args.schedule)
             if config.delete_archive_when_finished:
-                shutil.rmtree(config.dest_location)
+                rmtree(config.dest_location)
         else:
             # TODO: Implement individual uploads
             pass
     except:
+        log.critical('Cannot open file: %s' % backup_list)
         raise # TODO: Handle exceptions 
+
 
 def read_file_list(flist):
     """Reads and returns the list of files in the file specified by
@@ -70,13 +75,14 @@ def create_archive(files):
         if not os.path.exists(config.dest_location):
             os.makedirs(config.dest_location)
     except OSError:
+        log.error('Cannot create directory %s' % config.dest_location)
         raise # TODO: Code exception handling
     
     archive_type = '.tar'
     mode = 'w:'
     if config.compression_method != 'none':
         archive_type = archive_type + '.' + config.compression_method
-        mode = mode + config.compression_method
+        mode += config.compression_method
 
     archive_name = ('bak' + time.strftime('%Y%m%d') + archive_type)
     archive_name = os.path.join(config.dest_location, archive_name)
@@ -85,8 +91,9 @@ def create_archive(files):
     try:
         with tarfile.open(archive_name, mode) as tar:
             for f in files:
-                if os.path.exists(f.strip()):
-                    tar.add(f.strip())
+                f = f.strip()
+                if os.path.exists(f):
+                    tar.add(f)
     except tarfile.CompressionError:
         raise # TODO: Handle
     except tarfile.TarError:
@@ -96,7 +103,7 @@ def create_archive(files):
 
 
 def send_file(path, tar_type, backup_schedule):
-    """'Calls' s3put.py to send a file to Amazon S3"""
+    """Uses s3put.py to send a file to Amazon S3"""
     # First we have to create a connection to S3
     key = s3put.s3connect()
     key.key = create_key(tar_type, backup_schedule)

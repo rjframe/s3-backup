@@ -31,30 +31,25 @@ aws_access_key_id = ''
 aws_secret_access_key = ''
 
 
-# BEGIN aws configuration
-
 # Enter client's info here
 bucket = 'mybucket'
-machine_name = 'machine1'
+machine_name = 'test1'
 
 # Note: boto uses TSL by default; we're not going to allow turning it off
 # use_tls = True
 
-# END aws configuration
-
-
-# BEGIN s3backup.py -specific configuration
-
 # If base_dir is specified, the others are relative to it; if it is None,
 # the others need to be absolute paths
-
-base_dir = '/home/user/backup'
+base_dir = '/home/user'
 daily_backup_list = os.path.join(base_dir, 'daily.s3')
 weekly_backup_list = os.path.join(base_dir, 'weekly.s3')
 monthly_backup_list = os.path.join(base_dir, 'monthly.s3')
 
 # Destination of the created archive
 dest_location = '/tmp/backup' # os.path.join(base_dir, 'backup') 
+
+# Log file location
+log_file = os.path.join(base_dir, 's3backup.log')
 
 # Compression options
 # Note: use_archive = True to tar the files then compress; False for

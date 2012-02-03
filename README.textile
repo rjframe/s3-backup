@@ -1,24 +1,16 @@
 h2. s3backup
 
-h3. TOC
-
-* "Introduction":#intro
-* "Set up":#setup
-* "Issues and TODO":#issues
-
-h3(#intro). Introduction
-
-s3backup is a collection of utilities to generate automatic cloud backups (scheduled via cron). The bucket / key naming system is such that multiple machines at multiple locations can be backed up and easily organized.
+s3backup is a collection of utilities to generate automatic cloud backups (scheduled via cron). The bucket / key naming system is such that multiple machines at multiple locations can be backed up, easily organized, and easily restored.
 
 Data security is not yet fully implemented - transfers are encrypted via TLS, but encrypting the archive before transfer has not yet been implemented.
 
-h3(#setup). Set up
+h3. Set up
 
 s3backup requires boto to run -
 
 bq. $ virtualenv<br />$ pip install boto
 
-All system configuration is in config.py - set your AWS access and secret key, directories, and a few settings.
+All system configuration is in config.py - set your AWS access and secret key, directories, and a few other settings.
 
 bq. Set aws_access_key_id and aws_secret_key to your account keys.
 
@@ -32,19 +24,16 @@ bq. Next create the backup lists and point the list variables to it - the commen
 
 bq. Set the directory to store the archive in.
 
-If you're keeping a local copy, specify its intended location. Otherwise, it's fine to keep it in /tmp.
+If you're keeping a local copy of the backup, specify its intended location. Otherwise, it's fine to keep it in /tmp.
 
-bq. Set a few miscellaneous settings.
+Next set a few miscellaneous settings.
 
-use_archive must be True for now.
-compression_method can be one of 'none', 'gz', or 'bz2' (default)
-Set delete_archive_when_finished to True if you don't want to keep a local copy of the archive
+bq. use_archive must be True for now.<br />compression_method can be one of 'none', 'gz', or 'bz2' (default)<br />Set delete_archive_when_finished to True if you don't want to keep a local copy of the archive
 
-A restore tool does not yet exist - all restores must occur manually.
+A restore tool does not yet exist - all restores must be made manually. The directory structure of backups is preserved so you can just copy/paste the files to restore.
 
-h3(#issues). Issues and TODO
+h3. Issues and TODO
 
-* System logging
 * Configuration file instead of storing settings in code
 * Encrypt archive / files before upload
 * Write an automatic restore / guided restore tool
@@ -55,3 +44,4 @@ h3(#issues). Issues and TODO
 * Implement zip compression
 * Some error handling routines need implemented
 * s3backup.py needs to handle non-archive uploads
+* Security / credential management

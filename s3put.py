@@ -21,6 +21,7 @@ import os.path
 
 import boto
 import boto.s3.key
+import log
 
 import config
 
@@ -28,11 +29,12 @@ import config
 parser = argparse.ArgumentParser(description='''Transfers the given file to
         Amazon S3.''')
 parser.add_argument('--list', action='store_true', help='''If the given
-        file is a list of files, send each item in the list. The list is
-        also uploaded so that the files can be restored to their original
-        locations.''')
+        file is a list of files, send each item in the list. The directory
+        tree is preserved so that the files can be restored to their 
+        original locations.''')
 parser.add_argument('file_path')
 
+log = log.get_logger('s3put')
 
 def main():
     args = parser.parse_args()
@@ -51,7 +53,6 @@ def main():
             key.key = '/' + base + f
 
             if os.path.isdir(f):
-                print('uploading tree ', f)
                 upload_dir_tree(f, key)
             else:
                 key.set_contents_from_filename(f)
@@ -60,19 +61,20 @@ def main():
 def upload_dir_tree(dir_tree, key):
     '''Uploads a directory tree rather than a single file.'''
     def visit(_, dir_tree, files):
-        print('dirtree', dir_tree)
+        log.debug('dirtree\t%s' % dir_tree)
         k = thekey      # Reset key each entry
         for f in files:
-            print('f:', f)
+            log.debug('f: %s' % f)
             fp = os.path.join(dir_tree, f)
             if os.path.isfile(fp):
-                print('reg f', fp)
+                log.debug('reg f:  %s' % fp)
                 # For each file, update the key with the path
                 key.key = k + os.path.basename(fp)
-        #        key.set_contents_from_filename(fp)
+                key.set_contents_from_filename(fp)
 
     # Execute visit in each directory
     thekey = key.key
+    log.debug('uploading tree %s', dir_tree)
     os.path.walk(dir_tree, visit, None)
 
 

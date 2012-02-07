@@ -18,23 +18,24 @@
 
 import os
 import sys
-import argparse
-import tarfile
 import time
-from shutil import rmtree
+
 
 import config
 import log
 import s3put
 
-parser = argparse.ArgumentParser(description='''Creates archives of files
-        according to a cron-determined schedule.''')
-parser.add_argument('schedule', choices=['daily', 'weekly', 'monthly'])
-
 log = log.get_logger('s3backup')
 
 
 def main():
+    import argparse
+    from shutil import rmtree
+
+    parser = argparse.ArgumentParser(description='''Creates archives of
+            files according to a cron-determined schedule.''')
+    parser.add_argument('schedule', choices=['daily', 'weekly', 'monthly'])
+
     args = parser.parse_args()
 
     if args.schedule == 'daily':
@@ -59,6 +60,20 @@ def main():
         raise # TODO: Handle exceptions 
 
 
+def getSHA512(file):
+    '''Returns a hexadecimal-format SHA512 hash of the specified file.'''
+    from Crypto.Hash import SHA512
+
+    hash  = SHA512.new()
+    block_size = hash.block_size
+
+    with open(file, 'rb') as f:
+        for piece in iter(lambda: f.read(128 * block_size), ''):
+            hash.update(piece)
+    
+    return hash.hexdigest()
+
+
 def read_file_list(flist):
     """Reads and returns the list of files in the file specified by
     'type'. Raises errors to the calling function."""
@@ -71,6 +86,8 @@ def create_archive(files):
     """Creates an archive of the given files and stores them in
     the location specified by config.destination. Returns the full path of
     the archive."""
+    import tarfile
+
     try:
         if not os.path.exists(config.dest_location):
             os.makedirs(config.dest_location)
@@ -107,6 +124,7 @@ def send_file(path, tar_type, backup_schedule):
     # First we have to create a connection to S3
     key = s3put.s3connect()
     key.key = create_key(tar_type, backup_schedule)
+    key.set_metadata('sha512', getSHA512(path))
     key.set_contents_from_filename(path)
 
 

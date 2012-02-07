@@ -19,7 +19,9 @@
 import os
 import sys
 import time
+import struct
 
+from Crypto.Cipher import AES
 
 import config
 import log
@@ -45,11 +47,40 @@ def main():
     else:
         backup_list = config.monthly_backup_list
 
+    do_backup(backup_list, args.schedule)
+
+
+def do_backup(backup_list, schedule):
+    '''Handles the backup.'''
+# TODO: Pull into separate function
     try:
         files = read_file_list(backup_list)
         if config.use_archive:
-            path, tar_type = create_archive(files)
-            send_file(path, tar_type, args.schedule)
+            archive_path, tar_type = create_archive(files)
+            if config.enc_aes:
+                piece_size = 1024*64 # Put in config.py?
+                encryptor = AES.new(config.enc_key, AES.MODE_CBC)
+                # Store the file size for when we decrypt
+                fsize = os.path.getsize(archive_path)
+                enc_file = archive_path + '.enc'
+                
+                with open(archive_path, 'rb') as inf:
+                    with open(enc_file, 'wb') as outf:
+                        outf.write(struct.pack('<Q', fsize))
+                        while True:
+                            piece = inf.read(piece_size)
+                            if not piece:
+                                break
+                            elif len(piece) % 16 != 0:
+                                piece += ' ' * (16 - len(piece) % 16)
+                            outf.write(encryptor.encrypt(piece))
+            
+                send_file(enc_file, tar_type, schedule)
+                # Delete the plaintext local version
+                os.remove(archive_path)
+            else: # Not encrypting
+                send_file(archive_path, tar_type, schedule)
+
             if config.delete_archive_when_finished:
                 rmtree(config.dest_location)
         else:

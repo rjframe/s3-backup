@@ -19,7 +19,6 @@
                                                             # Readme
 
 # TODO: Place these in /etc/s3backup.cfg or ~/.s3backup.cfg
-# TODO: Logging
 # TODO: Test with symbolic links (probably have a couple of issues)
 # TODO: Test on Windows
 
@@ -35,12 +34,17 @@ aws_secret_access_key = ''
 bucket = 'mybucket'
 machine_name = 'test1'
 
-# Note: boto uses TSL by default; we're not going to allow turning it off
+# Note: boto uses TLS by default; we're not going to allow turning it off
 # use_tls = True
+
+# TODO: Allow overriding these on the command-line
+# Should we hash a password for the key to ensure it isn't stupid?
+enc_aes = True
+enc_key = '-encryption key-'
 
 # If base_dir is specified, the others are relative to it; if it is None,
 # the others need to be absolute paths
-base_dir = '/home/user'
+base_dir = '/some/dir'
 daily_backup_list = os.path.join(base_dir, 'daily.s3')
 weekly_backup_list = os.path.join(base_dir, 'weekly.s3')
 monthly_backup_list = os.path.join(base_dir, 'monthly.s3')

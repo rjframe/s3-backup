@@ -4,13 +4,13 @@ s3backup is a collection of utilities to generate automatic cloud backups (sched
 
 The file's SHA512 hash is calculated for eventual verification and incremental backups.
 
-Data security is not yet fully implemented - transfers are encrypted via TLS, but encrypting the archive before transfer has not yet been implemented.
+Data security is not yet fully implemented - transfers are encrypted via TLS and s3backup.py will encrypt archives before sending, but individual file uploads are not yet encrypted.
 
 h3. Set up
 
 s3backup requires boto and pycrypto to run -
 
-bq. $ pip install boto<br />$pip install pycrypto
+bq. $ pip install boto<br />$ pip install pycrypto
 
 All system configuration is in config.py - set your AWS access and secret key, directories, and a few other settings.
 
@@ -24,6 +24,10 @@ s3bucket organizes uploads to effectively organize backups from multiple machine
 
 bq. Next create the backup lists and point the list variables to it - the comments in the code explain this step.
 
+bq. Set the encryption settings.
+
+If you turn encryption on, set the encryption key. Future versions may hash the input for the actual key to guarantee a strong key. Doing so will be incompatible with the current method, so both decryption functions would be kept for a while.
+
 bq. Set the directory to store the archive in.
 
 If you're keeping a local copy of the backup, specify its intended location. Otherwise, it's fine to keep it in /tmp.
@@ -32,12 +36,13 @@ Next set a few miscellaneous settings.
 
 bq. use_archive must be True for now.<br />compression_method can be one of 'none', 'gz', or 'bz2' (default)<br />Set delete_archive_when_finished to True if you don't want to keep a local copy of the archive
 
-A restore tool does not yet exist - all restores must be made manually. The directory structure of backups is preserved so you can just copy/paste the files to restore.
+restore.py is not nearly complete - all restores must be made manually. The directory structure of backups is preserved so you can just copy/paste the files to restore. restore.py only contains a decryption function right now.
 
 h3. Issues and TODO
 
 * Configuration file instead of storing settings in code
 * Encrypt archive / files before upload
+** UPDATE: Archives can be encrypted; individual files will come later
 * Write an automatic restore / guided restore tool
 * Test on Windows
 * Test on symbolic links

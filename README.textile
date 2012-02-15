@@ -36,7 +36,7 @@ Next set a few miscellaneous settings.
 
 bq. use_archive must be True for now.<br />compression_method can be one of 'none', 'gz', or 'bz2' (default)<br />Set delete_archive_when_finished to True if you don't want to keep a local copy of the archive
 
-restore.py is not yet implmented.
+restore.py is not yet implemented.
 
 h3. Issues and TODO
 

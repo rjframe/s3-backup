@@ -15,8 +15,8 @@
 # limitations under the License.
 
 
-# Schedule via cron (win: Task Manager) (see README) TODO: Instructions in
-                                                            # Readme
+# Schedule via cron (win: Task Manager) (see README)
+# TODO: Write cron example in Readme
 
 # TODO: Place these in /etc/s3backup.cfg or ~/.s3backup.cfg
 # TODO: Test with symbolic links (probably have a couple of issues)
@@ -26,21 +26,16 @@
 import os
 
 
+# === AWS Settings === #
+
 aws_access_key_id = ''
 aws_secret_access_key = ''
-
-
-# Enter client's info here
 bucket = 'mybucket'
+
 machine_name = 'test1'
 
-# Note: boto uses TLS by default; we're not going to allow turning it off
-# use_tls = True
 
-# TODO: Allow overriding these on the command-line
-# Should we hash a password for the key to ensure it isn't stupid?
-enc_aes = True
-enc_key = '-encryption key-'
+# === Directory / Filesystem settings === #
 
 # If base_dir is specified, the others are relative to it; if it is None,
 # the others need to be absolute paths
@@ -49,22 +44,22 @@ daily_backup_list = os.path.join(base_dir, 'daily.s3')
 weekly_backup_list = os.path.join(base_dir, 'weekly.s3')
 monthly_backup_list = os.path.join(base_dir, 'monthly.s3')
 
-# Destination of the created archive
 dest_location = '/tmp/backup' # os.path.join(base_dir, 'backup') 
-
-# Log file location
 log_file = os.path.join(base_dir, 's3backup.log')
 
-# Compression options
+# === Backup settings === #
+
+delete_archive_when_finished = True
+
+# TODO: Allow overriding these on the command-line
+# Should we hash a password for the key to ensure it isn't stupid?
+enc_backup = True
+enc_key = '-encryption key-'
+enc_piece_size = 1024*64
+
 # Note: use_archive = True to tar the files then compress; False for
 # for no compression
 # Supported compression methods are none, gz, and bz2
 # TODO: Implement zip compression
-
-# Note: invalid compression methods should raise tarfile.CompressionError;
-# in practice it just hasn't written the file.
 use_archive = True # TODO: 'False' not yet implemented
 compression_method = 'bz2'
-delete_archive_when_finished = True
-
-# END s3backup.py -specific configuration

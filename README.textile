@@ -1,8 +1,8 @@
 h2. s3backup
 
-s3backup is a collection of utilities to generate automatic cloud backups (scheduled via cron). The bucket / key naming system is such that multiple machines at multiple locations can be backed up, easily organized, and easily restored.
+s3backup is a collection of utilities to generate automatic cloud backups (scheduled via cron) through Amazon.com's AWS S3 service. The bucket / key naming system is such that multiple machines at multiple locations can be backed up, easily organized, and easily restored.
 
-The file's SHA512 hash is calculated for eventual verification and incremental backups.
+The file's hash is calculated for eventual verification and incremental backups.
 
 Data security is not yet fully implemented - transfers are encrypted via TLS and s3backup.py will encrypt archives before sending, but individual file uploads are not yet encrypted.
 
@@ -36,13 +36,12 @@ Next set a few miscellaneous settings.
 
 bq. use_archive must be True for now.<br />compression_method can be one of 'none', 'gz', or 'bz2' (default)<br />Set delete_archive_when_finished to True if you don't want to keep a local copy of the archive
 
-restore.py is not nearly complete - all restores must be made manually. The directory structure of backups is preserved so you can just copy/paste the files to restore. restore.py only contains a decryption function right now.
+restore.py is not yet implmented.
 
 h3. Issues and TODO
 
 * Configuration file instead of storing settings in code
-* Encrypt archive / files before upload
-** UPDATE: Archives can be encrypted; individual files will come later
+* Encrypt individual file uploads
 * Write an automatic restore / guided restore tool
 * Test on Windows
 * Test on symbolic links

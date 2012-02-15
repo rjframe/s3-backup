@@ -17,10 +17,11 @@
 
 import os.path
 
-from Crypto.Cipher import AES
+#from Crypto.Cipher import AES
 
 import log
 import config
+from encrypt import getFileHash
 
 
 log = log.get_logger('s3put')
@@ -53,26 +54,13 @@ def main():
             if os.path.isdir(f):
                 upload_dir_tree(f, key)
             else:
-                key.set_metadata('sha512', getSHA512(f))
+                key.set_metadata('sha512', getFileHash(f))
                 key.set_contents_from_filename(f)
-
-
-def getSHA512(file):
-    '''Returns a hexadecimal-format SHA512 hash of the specified file.'''
-    from Crypto.Hash import SHA512
-
-    hash  = SHA512.new()
-    block_size = hash.block_size
-
-    with open(file, 'rb') as f:
-        for piece in iter(lambda: f.read(128 * block_size), ''):
-            hash.update(piece)
-    
-    return hash.hexdigest()
 
 
 def upload_dir_tree(dir_tree, key):
     '''Uploads a directory tree rather than a single file.'''
+
     def visit(_, dir_tree, files):
         log.debug('dirtree\t%s' % dir_tree)
         k = thekey      # Reset key each entry
@@ -83,7 +71,7 @@ def upload_dir_tree(dir_tree, key):
                 log.debug('reg f:  %s' % fp)
                 # For each file, update the key with the path
                 key.key = k + os.path.basename(fp)
-                key.set_metadata('sha512', getSHA512(fp))
+                key.set_metadata('sha512', getFileHash(fp))
                 key.set_contents_from_filename(fp)
 
     # Execute visit in each directory
@@ -93,9 +81,9 @@ def upload_dir_tree(dir_tree, key):
 
 
 def create_key(filename):
-    '''Key will be [machine_name]/YYYYMMDD/filename'''
+    '''Creates the key to use for S3. Key will be
+    [machine_name]/YYYYMMDD/filename'''
     import time
-
     return ('%s/%s/%s' % (config.machine_name, time.strftime('%Y%m%d'), 
         filename))
 

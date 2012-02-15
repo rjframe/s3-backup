@@ -21,60 +21,44 @@ import sys
 import time
 import struct
 
-from Crypto.Cipher import AES
-
 import config
 import log
 import s3put
+import encrypt
 
 log = log.get_logger('s3backup')
 
 
 def main():
     import argparse
-    from shutil import rmtree
 
     parser = argparse.ArgumentParser(description='''Creates archives of
             files according to a cron-determined schedule.''')
     parser.add_argument('schedule', choices=['daily', 'weekly', 'monthly'])
-
     args = parser.parse_args()
 
-    if args.schedule == 'daily':
+    do_backup(args.schedule)
+
+
+def do_backup(schedule):
+    '''Handles the backup.'''
+    
+    from shutil import rmtree
+
+    if schedule == 'daily':
         backup_list = config.daily_backup_list
-    elif args.schedule == 'weekly':
+    elif schedule == 'weekly':
         backup_list = config.weekly_backup_list
     else:
         backup_list = config.monthly_backup_list
 
-    do_backup(backup_list, args.schedule)
-
-
-def do_backup(backup_list, schedule):
-    '''Handles the backup.'''
-# TODO: Pull into separate function
     try:
         files = read_file_list(backup_list)
         if config.use_archive:
             archive_path, tar_type = create_archive(files)
-            if config.enc_aes:
-                piece_size = 1024*64 # Put in config.py?
-                encryptor = AES.new(config.enc_key, AES.MODE_CBC)
-                # Store the file size for when we decrypt
-                fsize = os.path.getsize(archive_path)
-                enc_file = archive_path + '.enc'
-                
-                with open(archive_path, 'rb') as inf:
-                    with open(enc_file, 'wb') as outf:
-                        outf.write(struct.pack('<Q', fsize))
-                        while True:
-                            piece = inf.read(piece_size)
-                            if not piece:
-                                break
-                            elif len(piece) % 16 != 0:
-                                piece += ' ' * (16 - len(piece) % 16)
-                            outf.write(encryptor.encrypt(piece))
-            
+            if config.enc_backup:
+                enc_file = encrypt.encrypt_file(config.enc_key,
+                        archive_path, config.enc_piece_size)
                 send_file(enc_file, tar_type, schedule)
                 # Delete the plaintext local version
                 os.remove(archive_path)
@@ -85,24 +69,10 @@ def do_backup(backup_list, schedule):
                 rmtree(config.dest_location)
         else:
             # TODO: Implement individual uploads
-            pass
-    except:
+            log.error('Not yet implemented: individual file uploads.')
+    except IOError:
         log.critical('Cannot open file: %s' % backup_list)
-        raise # TODO: Handle exceptions 
-
-
-def getSHA512(file):
-    '''Returns a hexadecimal-format SHA512 hash of the specified file.'''
-    from Crypto.Hash import SHA512
-
-    hash  = SHA512.new()
-    block_size = hash.block_size
-
-    with open(file, 'rb') as f:
-        for piece in iter(lambda: f.read(128 * block_size), ''):
-            hash.update(piece)
-    
-    return hash.hexdigest()
+        sys.exit(1) 
 
 
 def read_file_list(flist):
@@ -123,8 +93,9 @@ def create_archive(files):
         if not os.path.exists(config.dest_location):
             os.makedirs(config.dest_location)
     except OSError:
-        log.error('Cannot create directory %s' % config.dest_location)
-        raise # TODO: Code exception handling
+        # TODO: Fallback to temporary directory?
+        log.critical('Cannot create directory %s' % config.dest_location)
+        sys.exit(1)
     
     archive_type = '.tar'
     mode = 'w:'
@@ -155,12 +126,13 @@ def send_file(path, tar_type, backup_schedule):
     # First we have to create a connection to S3
     key = s3put.s3connect()
     key.key = create_key(tar_type, backup_schedule)
-    key.set_metadata('sha512', getSHA512(path))
+    key.set_metadata('sha512', encrypt.getFileHash(path))
     key.set_contents_from_filename(path)
 
 
 def create_key(file_extension, backup_type):
-    '''Key format is machine_name/backup_type/YYYYMMDD.file_extension'''
+    '''Creates and returns the key for S3. Key format is
+    machine_name/backup_type/YYYYMMDD.file_extension'''
     keyname = ('%s/%s/%s%s' % (config.machine_name, backup_type,
         time.strftime('%Y%m%d'), file_extension))
     return keyname

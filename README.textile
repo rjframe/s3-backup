@@ -36,20 +36,7 @@ Next set a few miscellaneous settings.
 
 bq. use_archive must be True for now.<br />compression_method can be one of 'none', 'gz', or 'bz2' (default)<br />Set delete_archive_when_finished to True if you don't want to keep a local copy of the archive.
 
+h3. Restore
+
 restore.py uses three sub-commands: only full-restore is implemented.
-
-h3. Issues and TODO
-
-* Test on Windows - next priority
-* Configuration file instead of storing settings in code
-* Encrypt individual file uploads
-* Finish the restore tool
-* Fix for symbolic links
-** Setting to determine whether to follow links
-* Create cron scheduling guide (Win: Task Manager)
-* Implement zip compression
-* Some error handling routines need implemented
-* s3backup.py needs to handle non-archive uploads
-** restore.py needs to handle non-archive restores
-*** Probably just the choose-files and browse-files subcommands
-* Security / credential management
+full-restore restores all files in the archive if --force or --force-no-overwrite is given. Otherwise, it prompts for each file (time-consuming for large archives).

@@ -41,30 +41,34 @@ def encrypt_file(key, filename, piece_size):
                     break
                 # The file size must be a multiple of 16 bytes
                 elif len(piece) % 16 != 0:
-                    piece += ' ' * (16 - len(piece) % 16)
+                    try:
+                        piece += ' ' * (16 - len(piece) % 16)
+                    except TypeError:
+                        # For Python 3 - TODO: Test decryptor
+                        piece += bytes(' ',
+                                'ascii') * (16 - len(piece) % 16)
                 outf.write(encryptor.encrypt(piece))
     return enc_file
 
 
-def decrypt_file(key, encrypted_file, piece_size):
-    '''Decrypts and writes a file. Saves the new file with the same name
-    minus the last file extension. Basically assumes the file as an '.enc'
-    or similar extension. Returns the filename of the decrypted file.'''
+def decrypt_file(key, encrypted_file, decrypted_file, piece_size):
+    '''Decrypts and writes a file. Returns True on success, False on fail'''
 
-    decrypted_file = encrypted_file.rsplit('.', 1)[0]
-    
-    with open(encrypted_file, 'rb') as inf:
-        size = struct.unpack('<Q', inf.read(struct.calcsize('Q')))[0]
-        decryptor = AES.new(key, AES.MODE_CBC)
+    try:
+        with open(encrypted_file, 'rb') as inf:
+            size = struct.unpack('<Q', inf.read(struct.calcsize('Q')))[0]
+            decryptor = AES.new(key, AES.MODE_CBC)
 
-        with open(decrypted_file, 'wb') as outf:
-            while True:
-                piece = inf.read(piece_size)
-                if not piece:
-                    break
-                outf.write(decryptor.decrypt(piece))
-            outf.truncate(size)
-    return decrypted_file
+            with open(decrypted_file, 'wb') as outf:
+                while True:
+                    piece = inf.read(piece_size)
+                    if not piece:
+                        break
+                    outf.write(decryptor.decrypt(piece))
+                outf.truncate(size)
+        return True
+    except:
+        return False
 
 
 # TODO: Place default block sizes here for each hash algorithm

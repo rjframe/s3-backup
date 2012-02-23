@@ -2,9 +2,9 @@ h2. s3backup
 
 s3backup is a collection of utilities to generate automatic cloud backups (scheduled via cron) through Amazon.com's AWS S3 service. The bucket / key naming system is such that multiple machines at multiple locations can be backed up, easily organized, and easily restored.
 
-The file's hash is calculated for eventual verification and incremental backups.
+SHA512 encryption via pycrypto ensures all data is secure while off-site.
 
-Data security is not yet fully implemented - transfers are encrypted via TLS and s3backup.py will encrypt archives before sending, but individual file uploads are not yet encrypted.
+The file's hash is calculated for eventual verification and incremental backups.
 
 h3. Set up
 
@@ -26,7 +26,7 @@ bq. Next create the backup lists and point the list variables to it - the commen
 
 bq. Set the encryption settings.
 
-If you turn encryption on, set the encryption key. Future versions may hash the input for the actual key to guarantee a strong key. Doing so will be incompatible with the current method, so both decryption functions would be kept for a while.
+If you use encryption, set the encryption key. Future versions may hash a password variable for the actual key to guarantee a strong key.
 
 bq. Set the directory to store the archive in.
 
@@ -34,20 +34,22 @@ If you're keeping a local copy of the backup, specify its intended location. Oth
 
 Next set a few miscellaneous settings.
 
-bq. use_archive must be True for now.<br />compression_method can be one of 'none', 'gz', or 'bz2' (default)<br />Set delete_archive_when_finished to True if you don't want to keep a local copy of the archive
+bq. use_archive must be True for now.<br />compression_method can be one of 'none', 'gz', or 'bz2' (default)<br />Set delete_archive_when_finished to True if you don't want to keep a local copy of the archive.
 
-restore.py is not yet implmented.
+restore.py uses three sub-commands: only full-restore is implemented.
 
 h3. Issues and TODO
 
+* Test on Windows - next priority
 * Configuration file instead of storing settings in code
 * Encrypt individual file uploads
-* Write an automatic restore / guided restore tool
-* Test on Windows
-* Test on symbolic links
+* Finish the restore tool
+* Fix for symbolic links
 ** Setting to determine whether to follow links
 * Create cron scheduling guide (Win: Task Manager)
 * Implement zip compression
 * Some error handling routines need implemented
 * s3backup.py needs to handle non-archive uploads
+** restore.py needs to handle non-archive restores
+*** Probably just the choose-files and browse-files subcommands
 * Security / credential management

@@ -21,10 +21,12 @@
 # TODO: Place these in /etc/s3backup.cfg or ~/.s3backup.cfg
 # TODO: Test with symbolic links (probably have a couple of issues)
 # TODO: Test on Windows
-
+# TODO: Find a good os.nice value so we don't slow things down on a busy
+# system
 
 import os
 
+version = 0.4
 
 # === AWS Settings === #
 
@@ -49,6 +51,7 @@ log_file = os.path.join(base_dir, 's3backup.log')
 
 # === Backup settings === #
 
+# Note: this deletes the entire dest_location folder
 delete_archive_when_finished = True
 
 # TODO: Allow overriding these on the command-line

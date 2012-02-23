@@ -19,12 +19,12 @@
 import os
 import sys
 import time
-import struct
 
 import config
 import log
-import s3put
 import encrypt
+
+version = '0.7'
 
 log = log.get_logger('s3backup')
 
@@ -35,6 +35,8 @@ def main():
     parser = argparse.ArgumentParser(description='''Creates archives of
             files according to a cron-determined schedule.''')
     parser.add_argument('schedule', choices=['daily', 'weekly', 'monthly'])
+    parser.add_argument('--version', action='version', version='s3backup '
+            '%s; Suite version %s' % (version, config.version))
     args = parser.parse_args()
 
     do_backup(args.schedule)
@@ -57,6 +59,8 @@ def do_backup(schedule):
         if config.use_archive:
             archive_path, tar_type = create_archive(files)
             if config.enc_backup:
+                # We don't add the enc extension to the key - the metadata
+                # will tell us whether the archive is encrypted.
                 enc_file = encrypt.encrypt_file(config.enc_key,
                         archive_path, config.enc_piece_size)
                 send_file(enc_file, tar_type, schedule)
@@ -124,9 +128,14 @@ def create_archive(files):
 def send_file(path, tar_type, backup_schedule):
     """Uses s3put.py to send a file to Amazon S3"""
     # First we have to create a connection to S3
-    key = s3put.s3connect()
+    from s3put import s3connect
+
+    key = s3connect()
     key.key = create_key(tar_type, backup_schedule)
     key.set_metadata('sha512', encrypt.getFileHash(path))
+    key.set_metadata('enc', str(config.enc_backup))
+    log.debug('key: %s' % key)
+    log.debug('meta:enc: %s' % key.get_metadata('enc'))
     key.set_contents_from_filename(path)
 
 

@@ -28,7 +28,7 @@ bq. Next create the backup lists and point the list variables to it - the commen
 
 bq. Set the encryption settings.
 
-If you use encryption, set the encryption key. Future versions may hash a password variable for the actual key to guarantee a strong key.
+If you want to use encryption, set the password. The password is hashed for the encryption key.
 
 bq. Set the directory to store the archive in.
 

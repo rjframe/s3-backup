@@ -24,7 +24,7 @@ import config
 import log
 import encrypt
 
-version = '0.7'
+version = '0.8'
 
 log = log.get_logger('s3backup')
 
@@ -56,24 +56,20 @@ def do_backup(schedule):
 
     try:
         files = read_file_list(backup_list)
-        if config.use_archive:
-            archive_path, tar_type = create_archive(files)
-            if config.enc_backup:
-                # We don't add the enc extension to the key - the metadata
-                # will tell us whether the archive is encrypted.
-                enc_file = encrypt.encrypt_file(config.enc_key,
-                        archive_path, config.enc_piece_size)
-                send_file(enc_file, tar_type, schedule)
-                # Delete the plaintext local version
-                os.remove(archive_path)
-            else: # Not encrypting
-                send_file(archive_path, tar_type, schedule)
+        archive_path, tar_type = create_archive(files)
+        if config.enc_backup:
+            # We don't add the enc extension to the key - the metadata
+            # will tell us whether the archive is encrypted.
+            enc_file = encrypt.encrypt_file(config.enc_key,
+                    archive_path, config.enc_piece_size)
+            send_file(enc_file, tar_type, schedule)
+            # Delete the plaintext local version
+            os.remove(archive_path)
+        else: # Not encrypting
+            send_file(archive_path, tar_type, schedule)
 
-            if config.delete_archive_when_finished:
-                rmtree(config.dest_location)
-        else:
-            # TODO: Implement individual uploads
-            log.error('Not yet implemented: individual file uploads.')
+        if config.delete_archive_when_finished:
+            rmtree(config.dest_location)
     except IOError:
         log.critical('Cannot open file: %s' % backup_list)
         sys.exit(1) 
@@ -97,7 +93,6 @@ def create_archive(files):
         if not os.path.exists(config.dest_location):
             os.makedirs(config.dest_location)
     except OSError:
-        # TODO: Fallback to temporary directory?
         log.critical('Cannot create directory %s' % config.dest_location)
         sys.exit(1)
     
@@ -109,8 +104,6 @@ def create_archive(files):
 
     archive_name = ('bak' + time.strftime('%Y%m%d') + archive_type)
     archive_name = os.path.join(config.dest_location, archive_name)
-    # TODO: I need to verify the file was written also. In tests
-    # CompressionError hasn't been raised - it just doesn't write the file.
     try:
         with tarfile.open(archive_name, mode) as tar:
             for f in files:
@@ -118,9 +111,13 @@ def create_archive(files):
                 if os.path.exists(f):
                     tar.add(f)
     except tarfile.CompressionError:
-        raise # TODO: Handle
+        log.error('There was an error compressing the backup archive. '
+                'Please try again.')
+        sys.exit(1)
     except tarfile.TarError:
-        raise # TODO: Handle
+        log.error('There was an error creating the backup archive. '
+                'Please try again.')
+        raise
 
     return archive_name, archive_type
 

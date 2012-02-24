@@ -26,7 +26,10 @@
 
 import os
 
-version = 0.4
+from Crypto.Hash import SHA512
+
+# Suite version
+version = '0.5'
 
 # === AWS Settings === #
 
@@ -54,15 +57,17 @@ log_file = os.path.join(base_dir, 's3backup.log')
 # Note: this deletes the entire dest_location folder
 delete_archive_when_finished = True
 
-# TODO: Allow overriding these on the command-line
-# Should we hash a password for the key to ensure it isn't stupid?
+# TODO: Allow supplying the password on the command-line
+
+# We hash a memorable password for the encryption key
 enc_backup = True
-enc_key = '-encryption key-'
+enc_password = 'Some text to be hashed'
+enc_hash = SHA512.new()
+enc_hash.update(enc_password)
+
+enc_key = enc_hash.digest()[0:32] # Use the first 32 bits
 enc_piece_size = 1024*64
 
-# Note: use_archive = True to tar the files then compress; False for
-# for no compression
 # Supported compression methods are none, gz, and bz2
 # TODO: Implement zip compression
-use_archive = True # TODO: 'False' not yet implemented
 compression_method = 'bz2'

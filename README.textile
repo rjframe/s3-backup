@@ -2,7 +2,9 @@ h2. s3backup
 
 s3backup is a collection of utilities to generate automatic cloud backups (scheduled via cron) through Amazon.com's AWS S3 service. The bucket / key naming system is such that multiple machines at multiple locations can be backed up, easily organized, and easily restored.
 
-SHA512 encryption via pycrypto ensures all data is secure while off-site.
+The suite has been tested on Linux (32-bit) and Windows 7 (64-bit w/ 64-bit Python).
+
+SHA512 encryption via pycrypto ensures all data is secure while off-site. Note: Version 0.5 begins using a hashed password for encryption, so it is incompatible with previous versions.
 
 The file's hash is calculated for eventual verification and incremental backups.
 
@@ -34,7 +36,9 @@ If you're keeping a local copy of the backup, specify its intended location. Oth
 
 Next set a few miscellaneous settings.
 
-bq. use_archive must be True for now.<br />compression_method can be one of 'none', 'gz', or 'bz2' (default)<br />Set delete_archive_when_finished to True if you don't want to keep a local copy of the archive.
+bq. compression_method can be one of 'none', 'gz', or 'bz2' (default)<br />Set delete_archive_when_finished to True if you don't want to keep a local copy of the archive.
+
+If you want to upload individual files instead of an archive use s3put.py
 
 h3. Restore
 

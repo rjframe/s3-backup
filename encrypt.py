@@ -15,9 +15,10 @@
 # limitations under the License.
 
 
+version = '0.3.1'
+
 import struct
 
-from Crypto.Cipher import AES
 
 import log
 
@@ -26,6 +27,8 @@ log = log.get_logger('encrypt')
 
 def encrypt_file(key, filename, piece_size):
     import os
+
+    from Crypto.Cipher import AES
 
     encryptor = AES.new(key, AES.MODE_CBC)
     # Store the file size for when we decrypt
@@ -54,6 +57,8 @@ def encrypt_file(key, filename, piece_size):
 def decrypt_file(key, encrypted_file, decrypted_file, piece_size):
     '''Decrypts and writes a file. Returns True on success, False on fail'''
 
+    from Crypto.Cipher import AES
+
     try:
         with open(encrypted_file, 'rb') as inf:
             size = struct.unpack('<Q', inf.read(struct.calcsize('Q')))[0]
@@ -72,7 +77,6 @@ def decrypt_file(key, encrypted_file, decrypted_file, piece_size):
 
 
 # TODO: Place default block sizes here for each hash algorithm
-# TODO: Use these in the code
 def getFileHash(file, algorithm='SHA512'):
     '''Returns a hexadecimal hash of the given file. Currently supported
     algorithms are "SHA512" and "MD5"'''

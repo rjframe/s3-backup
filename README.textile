@@ -32,7 +32,7 @@ If you want to use encryption, set the password. The password is hashed for the 
 
 bq. Set the directory to store the archive in.
 
-If you're keeping a local copy of the backup, specify its intended location. Otherwise, it's fine to keep it in /tmp.
+If you're keeping a local copy of the backup, specify its (default) intended location. Otherwise, it's fine to keep it in /tmp.
 
 Next set a few miscellaneous settings.
 
@@ -40,7 +40,24 @@ bq. compression_method can be one of 'none', 'gz', or 'bz2' (default)<br />Set d
 
 If you want to upload individual files instead of an archive use s3put.py
 
+h3. Utility Descriptions
+
+Any file prefixed by "s3" can be run as a standalone utility. 
+
+*s3backup.py* - creates an archive, encrypts it if desired, and uploads that archive to AWS. Intended for automated scheduling, but it can also be called anytime.
+
+*s3put.py* - uploads individual files. If the given file is a list of files, it uploads all files in the list. It can be automated or run as needed. Encryption and compression are not yet supported. s3put.py will eventually be the basis for incremental backups.
+
+*s3restore.py* - restores backups created by s3backup.py and s3put.py. Note that only the full-restore subcommand is currently implemented, which only supports restoring archives created by s3backup.py.
+
+*s3usercfg.py* - creates and configures an AWS user. Not fully implemented.
+
 h3. Restore
 
-restore.py uses three sub-commands: only full-restore is implemented.
-full-restore restores all files in the archive if --force or --force-no-overwrite is given. Otherwise, it prompts for each file (time-consuming for large archives).
+restore.py uses three sub-commands: only full-restore is currently implemented.
+
+full-restore restores all files in the archive if --force or --force-no-overwrite is given. Otherwise, it prompts for each file (time-consuming for large archives, but safer as you only restore the file(s) you want). full-restore will only work on backups created by s3backup.py.
+
+choose-files will restore only the file(s) you specify on the command-line. choose-files will work on backups created by s3backup.py and s3put.py.
+
+browse-files will allow you to browse the archive and select the files you want to restore. browse-files will work on backups created by s3backup.py and s3put.py.

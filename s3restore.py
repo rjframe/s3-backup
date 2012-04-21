@@ -20,12 +20,13 @@ from sys import exit
 import config
 import log
 
-version = 0.1
+version = '0.2'
 
 log = log.get_logger('s3restore')
 
 # TODO: Accept root from the cmd - default '/' for Un*x and 'C:\' for 
 # Windows
+# TODO: Allow restore from local archive
 
 def main():
     parser = get_args()
@@ -41,30 +42,30 @@ def run_full_restore(args):
     def handle_download(bucket, schedule, date, dest):
         ''' Handles the downloading and decrypting of the archive.'''
         # TODO: Refactor - too much repetition in if/else
-        if dest != None:
-            # If a destination is given, the --download-only option was
-            # passed. We download, decrypt if necessary, then exit
-            try:
+        
+        try:
+            if dest != None:
                 archive, is_enc = get_restore_archive(bucket, schedule,
-                    date, dest)
-                if is_enc:
-                    archive = decrypt(archive)
-                    log.debug('Archive is valid tar file: {}'.format(
-                            tarfile.is_tarfile(archive)))
-                    log.info('Saved file to %s.' % archive)
-                    exit(0)
-            except:
-                raise
-        else:
-            dest = config.dest_location
-            archive, is_enc = get_restore_archive(bucket, schedule,
-                    date, dest)
+                        date, dest)
+            else:
+                archive, is_enc = get_restore_archive(bucket, schedule,
+                        date, dest)
+            
             if is_enc:
                 archive = decrypt(archive)
-            log.debug('Archive is valid tar file: {}'.format(
+                log.debug('Archive is valid tar file: {}'.format(
                     tarfile.is_tarfile(archive)))
-            return archive
+        except:
+            raise
 
+        # If a destination is given, the --download-only option was passed.
+        # We download, decrypt if necessary, then exit without extracting.
+        # Otherwise, return the archive and continue with the restore.
+        if dest == None:
+            return archive
+        else:
+            log.info('Saved file to %s.' % archive)
+            exit(0)
 
     import tarfile
     from os.path import exists, join
@@ -132,7 +133,6 @@ def s3connect():
     return  s3.get_bucket(config.bucket)
 
 
-
 def decrypt(archive):
     '''Decrypts the given file. It deletes the encrypted version and
     returns the path to the decrypted file, which is the encrypted filename
@@ -147,7 +147,8 @@ def decrypt(archive):
         remove(archive)
         return decrypted 
     else:
-        raise IOError # Failed - TODO: Handle
+        log.critical('Failed to decrypt the archive %s.' % archive)
+        exit(1)
 
 
 def get_restore_archive(bucket, schedule, date, path):
@@ -194,9 +195,9 @@ def build_key(bucket, backup_type, backup_date):
             date = strftime('%Y%m%d', strptime(backup_date, '%m %d %Y'))
         except ValueError:
             log.error('Improper date format given.')
-            raise # TODO: Implement
+            exit(1)
     else:
-
+        # Grab the most recent backup
         prefix = ('%s/%s/' % (config.machine_name, backup_type))
         thekey = max(bucket.list(prefix, '/'))
         try:

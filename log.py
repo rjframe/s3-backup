@@ -20,6 +20,7 @@ import logging
 import logging.config
 
 from config import log_file
+from config import company
 
 # TODO: log handler to email on all failed backups (CRITICAL)
 
@@ -28,8 +29,6 @@ LOGGING = {
     'formatters': {
         'withtime': {
             'format': '%(asctime)s: %(name)-12s (%(lineno)-3d)- %(message)s'
-            # '%(asctime)s: %(funcname)-8s (%(lineno)-3d)- '
-            # '(message)s'
         },
         'notime': {
             'format': '%(name)-12s: %(levelname)-8s %(message)s'
@@ -40,7 +39,7 @@ LOGGING = {
             'level': 'DEBUG', # 'WARN',
             'class': 'logging.FileHandler',
             'formatter': 'withtime',
-            'filename': 'test_env/s3backup.log' #log_file
+            'filename': 'test_env/s3backup.log'
         },
         'toconsole': {
             'level': 'DEBUG',
@@ -67,7 +66,7 @@ logging.logProcesses = 0
 
 def get_logger(name):
     '''Returns a logger. Messages propogate to the root handler.'''
-    logger = logging.getLogger('app.' + name)
+    logger = logging.getLogger(company + '.' + name)
 
     return logger
 

@@ -24,7 +24,7 @@ import config
 import log
 import encrypt
 
-version = '0.8'
+version = '0.8.1'
 
 log = log.get_logger('s3backup')
 
@@ -111,13 +111,13 @@ def create_archive(files):
                 if os.path.exists(f):
                     tar.add(f)
     except tarfile.CompressionError:
-        log.error('There was an error compressing the backup archive. '
+        log.critical('There was an error compressing the backup archive. '
                 'Please try again.')
         sys.exit(1)
     except tarfile.TarError:
-        log.error('There was an error creating the backup archive. '
+        log.critical('There was an error creating the backup archive. '
                 'Please try again.')
-        raise
+        sys.exit(1)
 
     return archive_name, archive_type
 

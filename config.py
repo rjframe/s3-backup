@@ -29,7 +29,11 @@ import os
 from Crypto.Hash import SHA512
 
 # Suite version
-version = '0.5'
+version = '0.5.1'
+
+# Company / software name. Used as prefix for logging, eg:
+# name.s3Backup ....
+company = "sample"
 
 # === AWS Settings === #
 
@@ -57,7 +61,7 @@ log_file = os.path.join(base_dir, 's3backup.log')
 # Note: this deletes the entire dest_location folder
 delete_archive_when_finished = True
 
-# TODO: Allow supplying the password on the command-line
+# TODO: Allow supplying the password on the command-line when restoring
 
 # We hash a memorable password for the encryption key
 enc_backup = True

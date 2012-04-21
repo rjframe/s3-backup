@@ -25,10 +25,12 @@
     # Set permissions
     # Test permissions
 
+from sys import exit
+
 import boto.iam.connection
 import log
 
-version = '0.1'
+version = '0.1.1'
 
 log = log.get_logger('s3usercfg')
 
@@ -49,8 +51,9 @@ def main():
         acc, sec = create_user(conn, args.user, args.group)
         set_permissions(conn, acc, sec)
     except:
-        raise # TODO
-
+        log.critical('Cannot connect to AWS to configure user settings.')
+        exit(1)
+        
     success = test_permissions(conn, acc, sec)
     if success:
         # Will need args.user, acc, sec
@@ -119,7 +122,7 @@ def get_args():
     parser.add_argument('--access', help='''The AWS administrator access
             key to use to create the user. If not given, you will be
             prompted for the key.''')
-    # Not much of a secret on the cmd-line, is it?
+    # Not much of a secret on the command-line, is it?
     parser.add_argument('--secret', help='''The AWS administrator secret
             key to use to create the user. If not given, you will be
             prompted for the key.''')

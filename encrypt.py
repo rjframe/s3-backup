@@ -15,19 +15,17 @@
 # limitations under the License.
 
 
-version = '0.3.1'
+version = '0.3.2'
 
 import struct
-
-
 import log
+
 
 log = log.get_logger('encrypt')
 
 
 def encrypt_file(key, filename, piece_size):
     import os
-
     from Crypto.Cipher import AES
 
     encryptor = AES.new(key, AES.MODE_CBC)
@@ -76,7 +74,6 @@ def decrypt_file(key, encrypted_file, decrypted_file, piece_size):
         return False
 
 
-# TODO: Place default block sizes here for each hash algorithm
 def getFileHash(file, algorithm='SHA512'):
     '''Returns a hexadecimal hash of the given file. Currently supported
     algorithms are "SHA512" and "MD5"'''
@@ -113,4 +110,4 @@ def getFileHash(file, algorithm='SHA512'):
         return getSHA512(file)
     else:
         log.error('Unsupported hash algorithm given.')
-        raise # TODO: Create error class
+        return None

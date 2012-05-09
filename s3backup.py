@@ -110,6 +110,7 @@ def create_archive(files):
                 f = f.strip()
                 if os.path.exists(f):
                     tar.add(f)
+                    log.debug('Added %s.' % f)
     except tarfile.CompressionError:
         log.critical('There was an error compressing the backup archive. '
                 'Please try again.')

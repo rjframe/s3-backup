@@ -1,10 +1,10 @@
 h2. s3backup
 
-s3backup is a collection of utilities to generate automatic cloud backups (scheduled via cron) through Amazon.com's AWS S3 service. The bucket / key naming system is such that multiple machines at multiple locations can be backed up, easily organized, and easily restored.
+s3backup is a collection of utilities to generate automatic cloud backups (scheduled via cron/Task Scheduler/launchd) through Amazon.com's AWS S3 service. The bucket / key naming system is such that multiple machines at multiple locations can be backed up, easily organized, and easily restored.
 
-The suite has been tested on Linux (32-bit) and Windows 7 (64-bit w/ 64-bit Python).
+The suite has been tested on Linux (32-bit) and Windows 7 (64-bit w/ 64-bit Python). Mac OS X testing coming soon.
 
-SHA512 encryption via pycrypto ensures all data is secure while off-site. Note: Version 0.5 begins using a hashed password for encryption, so it is incompatible with previous versions.
+AES encryption via pycrypto ensures all data is secure while off-site. Note: Version 0.5 begins using a hashed password for encryption, so it is incompatible with previous versions.
 
 The file's hash is calculated for eventual verification and incremental backups.
 
@@ -14,7 +14,17 @@ s3backup requires boto and pycrypto to run -
 
 bq. $ pip install boto<br />$ pip install pycrypto
 
+Installing pycrypto in the manner requires a C compiler on the system. Precompiled binaries are available online.
+
 All system configuration is in config.py - set your AWS access and secret key, directories, and a few other settings.
+
+bq. Set pass_hash to your desired hash type.
+
+If using pycrypto < 2.4, use either MD5 or SHA. If >=2.4, anything works.
+
+bq. company = 'name'
+
+"company" is used for a logging prefix.
 
 bq. Set aws_access_key_id and aws_secret_key to your account keys.
 
@@ -40,24 +50,28 @@ bq. compression_method can be one of 'none', 'gz', or 'bz2' (default)<br />Set d
 
 If you want to upload individual files instead of an archive use s3put.py
 
-h3. Utility Descriptions
+h3. Utility Descriptions and Usage
 
-Any file prefixed by "s3" can be run as a standalone utility. 
+Any file prefixed by "s3" can be run as a standalone utility. Use --help for detailed usage.
 
 *s3backup.py* - creates an archive, encrypts it if desired, and uploads that archive to AWS. Intended for automated scheduling, but it can also be called anytime.
 
-*s3put.py* - uploads individual files. If the given file is a list of files, it uploads all files in the list. It can be automated or run as needed. Encryption and compression are not yet supported. s3put.py will eventually be the basis for incremental backups.
+bq. Example: python s3backup.py daily
 
-*s3restore.py* - restores backups created by s3backup.py and s3put.py. Note that only the full-restore subcommand is currently implemented, which only supports restoring archives created by s3backup.py.
+*s3put.py* - uploads individual files. With the --list flag, the provided file should be a list of files; it uploads all files in the list. It can be automated or run as desired. Encryption and compression are not yet supported. s3put.py will eventually be the basis for incremental backups.
+
+bq. Example: python s3put.py /some/file
+
+*s3restore.py* - restores backups created by s3backup.py and s3put.py.
+
+Subcommands (--help for more details):
+
+full-restore - Downloads an archive and restores all files contained within. The --force flag overwrites all files without prompting and --force-no-overwrite restores all files that do not exist. No flags causes a prompt for each file.
+
+bq. Example: python s3restore.py full-restore daily "05 09 2012" --force
+
+browse-files - Provides an interface to browse an archive and restore only the selected files. The --archives flag will list all available archives and allow selecting, though it is not yet implemented. the --root flag has not yet been tested on Windows.
+
+bq. Example python s3restore.py browse-files -s daily -d "05 09 2012"
 
 *s3usercfg.py* - creates and configures an AWS user. Not fully implemented.
-
-h3. Restore
-
-restore.py uses three sub-commands: only full-restore is currently implemented.
-
-full-restore restores all files in the archive if --force or --force-no-overwrite is given. Otherwise, it prompts for each file (time-consuming for large archives, but safer as you only restore the file(s) you want). full-restore will only work on backups created by s3backup.py.
-
-choose-files will restore only the file(s) you specify on the command-line. choose-files will work on backups created by s3backup.py and s3put.py.
-
-browse-files will allow you to browse the archive and select the files you want to restore. browse-files will work on backups created by s3backup.py and s3put.py.

@@ -20,12 +20,10 @@ from sys import exit
 import config
 import log
 
-version = '0.2'
+version = '1.0'
 
 log = log.get_logger('s3restore')
 
-# TODO: Accept root from the cmd - default '/' for Un*x and 'C:\' for 
-# Windows
 # TODO: Allow restore from local archive
 
 def main():
@@ -33,48 +31,47 @@ def main():
     args = parser.parse_args()
     args.func(args) # Calls the appropriate function
 
-
 # BEGIN command functions
+
+def handle_download(bucket, schedule, date, dest):
+    ''' Handles the downloading and decrypting of the archive.'''
+   
+    import tarfile
+
+    try:
+        if dest != None:
+            archive, is_enc = get_restore_archive(bucket, schedule,
+                    date, dest)
+        else:
+            archive, is_enc = get_restore_archive(bucket, schedule,
+                    date, config.dest_location)
+        
+        if is_enc:
+            archive = decrypt(archive)
+            log.debug('Archive is valid tar file: {}'.format(
+                tarfile.is_tarfile(archive)))
+    except:
+        raise
+    return archive
+
 
 def run_full_restore(args):
     '''Executes the subcommand "full-restore".'''
-
-    def handle_download(bucket, schedule, date, dest):
-        ''' Handles the downloading and decrypting of the archive.'''
-        
-        try:
-            if dest != None:
-                archive, is_enc = get_restore_archive(bucket, schedule,
-                        date, dest)
-            else:
-                archive, is_enc = get_restore_archive(bucket, schedule,
-                        date, config.dest_location)
-            
-            if is_enc:
-                archive = decrypt(archive)
-                log.debug('Archive is valid tar file: {}'.format(
-                    tarfile.is_tarfile(archive)))
-        except:
-            raise
-
-        # If a destination is given, the --download-only option was passed.
-        # We download, decrypt if necessary, then exit without extracting.
-        # Otherwise, return the archive and continue with the restore.
-        if dest == None:
-            return archive
-        else:
-            log.info('Saved file to %s.' % archive)
-            exit(0)
 
     import tarfile
     from os.path import exists, join
     from sys import platform
 
     bucket = s3connect()
-    # 'args.download_only' contains either the download path or None
     log.debug('Calling handle_download. args.date = %s' % args.date)
     archive = handle_download(bucket, args.schedule, args.date,
             args.download_only)
+
+    # If --download-only was passed, print the destination and exit.
+    if args.download_only != None:
+        log.info('Saved file to %s.' % archive)
+        exit(0)
+    
     log.debug('Archive: %s' % archive)
   
     if platform.startswith('win'):
@@ -89,7 +86,8 @@ def run_full_restore(args):
 
     tar = tarfile.open(archive, 'r')
 
-    if args.force_no_overwrite: # Write all non-existent files
+    if args.force_no_overwrite:
+        # Don't overwrite existing files.
         files = tar.getnames()
         for f in files:
             filepath = join(root, f)
@@ -100,9 +98,11 @@ def run_full_restore(args):
             else:
                 log.info('%s exists. Not restoring.' % f)
 
-    elif args.force == True:    # Write/overwrite everything
+    elif args.force == True:
+        # Write/overwrite everything
         tar.extractall(root)
-    else:   # Ask on each file
+    else:
+        # Ask for each file
         files = tar.getnames()
         for f in files:
             do_it = raw_input('Restore %s? [y|n] ' % f)
@@ -110,41 +110,58 @@ def run_full_restore(args):
                 tar.extract(f, root)
 
 
-def run_choose_files(args):
-    '''Executes the subcommand "choose-files".'''
-    pass
-
-
 def run_browse_files(args):
     '''Execute the subcommand "browse-files". Raises any errors.'''
    
-    def handle_download(bucket, schedule, date):
-        '''Handles the downloading and decrypting of the archive.
-        Raises any errors.'''
-
-# TODO: Instead of printing filenames, I want to get the date and list the
-# dates backups were made. Probably allow selecting one here and browsing it
-        if args.archives:
-            print('Implement browse archives')
-            exit(0)
-
-        try:
-            archive, is_enc = get_restore_archive(bucket, schedule, date,
-                    config.dest_location)
-
-            if is_enc:
-                archive = decrypt(archive)
-                log.debug('Archive is valid tar file: {}'.format(
-                        tarfile.is_tarfile(archive)))
-        except:
-            raise
-
-        return archive
-
-
-    def run_browse_shell(tarinfo_list):
+    def do_browse_shell(tarinfo_list):
         '''Allows the user to browse the archive and select the files
         to restore.'''
+
+        def show_list(ti_list):
+            '''Prints a list of TarInfo objects'''
+
+            print(header_format.format('#', 'Mark', 'Name', 'Size',
+                                         'Last Modified'))
+            cnt = 0
+            for ti in ti_list:
+                cnt += 1
+
+                if ti in restore_list:
+                    marked = '*'
+                else:
+                    marked = ' '
+                print(output_format.format(cnt, marked, ti.name, ti.size,
+                        datetime.fromtimestamp(ti.mtime)))
+
+        def page_list(ti_list):
+            '''Pages a list of TarInfo objects'''
+            
+            go = True
+            last = 0
+            while go:
+                print(header_format.format('#', 'Mark', 'Name', 'Size',
+                        'Last Modified'))
+                
+                for i in range(30): 
+                    try:
+                        ti = ti_list[last]
+                    except IndexError:
+                        go = False
+                        break
+                    
+                    if ti in restore_list:
+                        marked = '*'
+                    else:
+                        marked = ' '
+                    print(output_format.format(last + 1, marked, ti.name,
+                            ti.size, datetime.fromtimestamp(ti.mtime)))
+                       
+                    last += 1
+                inp2 = raw_input('\nq to quit, Enter to continue: ')
+                if inp2 == 'q':
+                    go = False
+
+        # BEGIN do_browse_shell main code
 
         help_text = \
 '''\n"restore [number]" marks an object for restoration.
@@ -155,13 +172,15 @@ Previous commands: where "number" is the number printed on the listing.
 "show restore" shows all files currently marked for restoration.
 "page" prints the archive's files thirty at a time.
 "page restore" prints the files marked for restoration, thirty at a time.
-"q" quits without restoring.
+"quit" quits without restoring.
 "finish" quits and restores the files.
 "h" shows this message. All commands are case-sensitive.\n\n'''
 
         from datetime import datetime
 
-        output_format = '{0:<3}{1}{2:50}{3:<6}{4:%Y-%m-%d %H:%M:%S}'
+        # file number, status, name, size, date modified
+        header_format = '{:3}{:8}{:43}{:12}{}'
+        output_format = '{:<3}{}{:50}{:<6}{:%Y-%m-%d %H:%M:%S}'
 
         print(help_text)
         
@@ -169,24 +188,22 @@ Previous commands: where "number" is the number printed on the listing.
         restore_list = []
         while go:
 
+            inp = raw_input('\n-> ').lower()
+            if inp == 'h':
+                print(help_text)
 
-            # TODO: Refactor the show and page commands
-            try:
-                inp = raw_input('\n-> ').lower()
-                if inp == 'h':
-                    print(help_text)
-
-                # Quit, no restore
-                elif inp == 'q':
-                    go = False
-                    restore_list = None
+            # Quit, no restore
+            elif inp == 'quit':
+                go = False
+                restore_list = None
+            
+            # Quit and restore
+            elif inp == 'finish':
+                go = False
                 
-                # Quit and restore
-                elif inp == 'finish':
-                    go = False
-                
-                # Mark a file for restoration
-                elif inp.startswith('restore'):
+            # Mark a file for restoration
+            elif inp.startswith('restore'):
+                try:
                     num = inp.split(' ', 1)[1]
                     if num.isdigit():
                         if tarinfo_list[int(num) -1] not in restore_list:
@@ -196,9 +213,12 @@ Previous commands: where "number" is the number printed on the listing.
                     else:
                         print('I do not know what file you are \
                                 referring to.\n')
-               
-                # Cancel a marked file
-                elif inp.startswith('cancel'):
+                except IndexError:
+                    print('There is no file with that index.\n')
+           
+            # Cancel a marked file
+            elif inp.startswith('cancel'):
+                try:
                     num = inp.split(' ', 1)[1]
                     if num.isdigit():
                         if tarinfo_list[int(num) - 1] in restore_list:
@@ -206,100 +226,77 @@ Previous commands: where "number" is the number printed on the listing.
                     else:
                         print('I do not know what file you are \
                                 referring to.\n')
+                except IndexError:
+                    print('There is no file with that index.\n')
+            
+            # Prints the list of objects in the archive or restore list
+            elif inp.startswith('show'):
+                try:
+                    show_restore = inp.split(' ', 1)[1] == 'restore'
+                except IndexError:
+                    show_restore = False
                 
-                # Prints the list of objects in the archive or restore list
-                elif inp.startswith('show'):
-                    try:
-                        show_restore = inp.split(' ', 1)[1] == 'restore'
-                    except IndexError:
-                        show_restore = False
-                    
-                    if show_restore:
-                        # Printing the files in the restore list
-                        cnt = 0
-                        marked = '' # This lets me use the same format
-                        for ti in restore_list:
-                            cnt += 1
-                            print(output_format.format(
-                                    cnt, marked, ti.name, ti.size,
-                                    datetime.fromtimestamp(ti.mtime)))
-                    else:
-                        # We're printing the files in the archive
-                        cnt = 0
-                        for ti in tarinfo_list:
-                            cnt += 1
-
-                            if ti in restore_list:
-                                marked = '*'
-                            else:
-                                marked = ' '
-                            print(output_format.format(
-                                    cnt, marked, ti.name, ti.size,
-                                    datetime.fromtimestamp(ti.mtime)))
-
-                # Page the file list. 30 lines per page.
-                elif inp.startswith('page'):
-                    try:
-                         page_restore = inp.split(' ')[1] == 'restore'
-                    except IndexError:
-                        page_restore = False
-
-                    if page_restore:
-                        # We page the files marked for restoration
-                        print('Implement page restore')
-                    else:
-                        # Paging the archive contents
-                        go = True
-                        last = 0
-                        while go:
-                            for i in range(30): 
-                                try:
-                                    ti = tarinfo_list[last]
-                                except IndexError:
-                                    go = False
-                                    break
-                                
-                                if ti in restore_list:
-                                    marked = '*'
-                                else:
-                                    marked = ' '
-                                print(output_format.format(last + 1,
-                                        marked, ti.name, ti.size,
-                                        datetime.fromtimestamp(ti.mtime)))
-                                   
-                                last += 1
-                            inp2 = raw_input(
-                                        '\nq to quit, Enter to continue: ')
-                            if inp2 == 'q':
-                                go = False
-
+                if show_restore:
+                    show_list(restore_list)
                 else:
-                    print('I do not understand that command.\n\n')
-            except IndexError:
-                print('There is no file with that index.\n')
-            except:
-                raise
+                    show_list(tarinfo_list)
+
+            # Page the file list. 30 lines per page.
+            elif inp.startswith('page'):
+                try:
+                     page_restore = inp.split(' ')[1] == 'restore'
+                except IndexError:
+                    page_restore = False
+
+                if page_restore:
+                    page_list(restore_list)
+                else:
+                    page_list(tarinfo_list)
+            
+            # Unrecognized command given
+            else:
+                print('I do not understand that command.\n\n')
 
         return restore_list
+        
+    # END do_browse_files
+   
+    def do_restore(root, archive, restore_list):
+        '''Restores the list of TarInfo objects into the filesystem.'''
 
+        import tarfile
+
+        try:
+            for ti in restore_list:
+                log.info('Extracting %s to %s.' % (ti, root))
+                tar.extract(ti, root)
+        except:
+            raise
+
+    # BEGIN run_browse_files main code
 
     import tarfile
     from os.path import exists, join
     from sys import platform
 
     bucket = s3connect()
-    archive = handle_download(bucket, args.schedule, args.date)
+
+    # TODO: Instead of printing archive filenames, I want to get the date
+    # and  list the dates backups were made. Probably allow selecting one
+    # here and then browsing it
+    if args.archives:
+        print('Implement browse archives')
+        exit(0)
+
+    archive = handle_download(bucket, args.schedule, args.date,
+            config.dest_location)
     log.debug('Archive: %s' % archive)
 
     tar = tarfile.open(archive)
     lst = tar.getmembers()
 
-    # Allow the user to browse the archive and select files to extract
-    lst_to_extract = run_browse_shell(lst)
-    
-    #Testing
-    print(lst_to_extract)
-
+    lst_to_extract = do_browse_shell(lst)
+    do_restore(args.root, tar, lst_to_extract)
 
 
 # END command functions
@@ -308,11 +305,9 @@ Previous commands: where "number" is the number printed on the listing.
 def s3connect():
     '''Connects to S3 and returns the bucket.'''
     from boto import connect_s3
-    #import boto.s3
     
-    s3 = connect_s3(config.aws_access_key_id,
-            config.aws_secret_access_key)
-    return  s3.get_bucket(config.bucket)
+    s3 = connect_s3(config.aws_access_key_id, config.aws_secret_access_key)
+    return s3.get_bucket(config.bucket)
 
 
 def decrypt(archive):
@@ -432,25 +427,6 @@ def get_args():
                 help='''The filesystem to use. Defaults to "C"''')
     fullparser.set_defaults(func=run_full_restore)
 
-    # Parser for the choose-files command
-    chooseparser = subparsers.add_parser('choose-files', help='''Select
-    what files to restore.''')
-    chooseparser.add_argument('schedule', choices=['daily', 'weekly',
-            'monthly'], help='Specifies the backup type to restore.')
-    chooseparser.add_argument('date', help='''The date the backup was made.
-            A string of the format "MM DD YYYY". A value of "last" restores
-            the most recent backup.''')
-    chooseparser.add_argument('--force', action='store_true',
-            help='''Restores the files without confirming any overwrites.
-            ''')
-    chooseparser.add_argument('--force-no-overwrite', action='store_true',
-            help='''Restores the files, asking to verify overwriting
-            files.''')
-    chooseparser.add_argument('-f', nargs='*', metavar='FILE',
-            help='''Specify one or more files to restore. Only the
-            specified files are restored.''')
-    chooseparser.set_defaults(func=run_choose_files)
-
     # Parser for the browse-files command
     browseparser = subparsers.add_parser('browse-files', help='''Browse the
             archives and the archive's files and choose which to restore.
@@ -463,6 +439,12 @@ def get_args():
     browseparser.add_argument('--archives', action='store_true',
             help='''Prints the list of archives. If given, all other
             arguments are ignored.''')
+    if platform.startswith('win'):
+        browseparser.add_argument('r', '--root', default='C',
+                help='The root filesystem to restore to. Defaults to "C"')
+    else:
+        browseparser.add_argument('-r', '--root', default='/',
+                help='''The root directory to restore to.''')
     browseparser.set_defaults(func=run_browse_files)
 
     return mainparser

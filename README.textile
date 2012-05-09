@@ -14,7 +14,7 @@ s3backup requires boto and pycrypto to run -
 
 bq. $ pip install boto<br />$ pip install pycrypto
 
-Installing pycrypto in the manner requires a C compiler on the system. Precompiled binaries are available online.
+Installing pycrypto in this manner requires a C compiler on the system. Precompiled binaries are available online.
 
 All system configuration is in config.py - set your AWS access and secret key, directories, and a few other settings.
 
@@ -28,7 +28,7 @@ bq. company = 'name'
 
 bq. Set aws_access_key_id and aws_secret_key to your account keys.
 
-If you're installing this on public or psuedo-public computers, create sub-accounts and use those keys for security. Also manage access permissions from AWS - s3backup doesn't yet do this.
+If you're installing this on public or psuedo-public computers, create sub-accounts and use those keys for enhanced security. Also manage access permissions from AWS - s3backup doesn't yet do this.
 
 bq. Enter your bucket name and machine name.
 

@@ -15,7 +15,7 @@
 # limitations under the License.
 
 
-version = '0.3.2'
+version = '0.4'
 
 import struct
 import log
@@ -74,9 +74,22 @@ def decrypt_file(key, encrypted_file, decrypted_file, piece_size):
         return False
 
 
-def getFileHash(file, algorithm='SHA512'):
+def getFileHash(file, algorithm='MD5'):
     '''Returns a hexadecimal hash of the given file. Currently supported
-    algorithms are "SHA512" and "MD5"'''
+    algorithms are "SHA256", "SHA512" and "MD5"'''
+
+    def getSHA256(file):
+        '''Returns a hexadecimal-format SHA256 hash.'''
+        from Crypto.Hash import SHA256
+
+        hash = SHA256.new()
+        block_size = hash.block_size
+
+        with open(file, 'rb') as f:
+            for piece in iter(lambda: f.read(128 * block_size), ''):
+                hash.update(piece)
+
+        return hash.hexdigest()
 
     def getSHA512(file):
         '''Returns a hexadecimal-format SHA512 hash.'''
@@ -103,11 +116,13 @@ def getFileHash(file, algorithm='SHA512'):
                 hash.update(piece)
         
         return hash.hexdigest()
-    
-    if algorithm == 'MD5':
-        return getMD5(file)
+   
+    if algorithm == 'SHA256':
+        return getSHA256(file)
     elif algorithm == 'SHA512':
         return getSHA512(file)
+    elif algorithm == 'MD5':
+        return getMD5(file)
     else:
         log.error('Unsupported hash algorithm given.')
         return None

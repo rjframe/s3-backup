@@ -24,22 +24,36 @@
 # TODO: Find a good os.nice value so we don't slow things down on a busy
 # system
 
+pass_hash = 'SHA512' # MD5, SHA, SHA256
+
 import os
 
-from Crypto.Hash import SHA512
+if pass_hash == 'SHA512':
+    from Crypto.Hash import SHA512
+    enc_hash = SHA512.new()
+elif pass_hash == 'MD5':
+    from Crypto.Hash import MD5
+    enc_hash = MD5.new()
+elif pass_hash == 'SHA256':
+    from Crypto.Hash import SHA256
+    enc_hash = SHA256.new()
+else:
+    from Crypto.Hash import SHA
+    enc_hash = SHA.new()
+
 
 # Suite version
-version = '0.5.1'
+version = '0.6'
 
 # Company / software name. Used as prefix for logging, eg:
 # name.s3Backup ....
-company = "sample"
+company = "simplify"
 
 # === AWS Settings === #
 
-aws_access_key_id = ''
-aws_secret_access_key = ''
-bucket = 'mybucket'
+aws_access_key_id = 'AKIAIQSBQBA3DS6UYHWA'
+aws_secret_access_key = '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'
+bucket = 'simplifybackup_test'
 
 machine_name = 'test1'
 
@@ -48,7 +62,7 @@ machine_name = 'test1'
 
 # If base_dir is specified, the others are relative to it; if it is None,
 # the others need to be absolute paths
-base_dir = '/some/dir'
+base_dir = '/home/rjframe/code/github/s3backup/test_env'
 daily_backup_list = os.path.join(base_dir, 'daily.s3')
 weekly_backup_list = os.path.join(base_dir, 'weekly.s3')
 monthly_backup_list = os.path.join(base_dir, 'monthly.s3')
@@ -66,7 +80,6 @@ delete_archive_when_finished = True
 # We hash a memorable password for the encryption key
 enc_backup = True
 enc_password = 'Some text to be hashed'
-enc_hash = SHA512.new()
 enc_hash.update(enc_password)
 
 enc_key = enc_hash.digest()[0:32] # Use the first 32 bits

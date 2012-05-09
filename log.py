@@ -48,7 +48,7 @@ LOGGING = {
         }
     },
     'loggers': {
-        'app': {
+        company : {
             'handlers': ['tofile', 'toconsole'],
             'level': 'DEBUG'
         }

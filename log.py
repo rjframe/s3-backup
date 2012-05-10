@@ -14,13 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# TODO: Create log if it doesn't exist
-
 import logging
 import logging.config
 
 from config import log_file
 from config import company
+from config import log_raise_errs
 
 # TODO: log handler to email on all failed backups (CRITICAL)
 
@@ -57,7 +56,7 @@ LOGGING = {
 
 logging.config.dictConfig(LOGGING)
 
-logging.raiseExceptions = True # TODO: False for production
+logging.raiseExceptions = log_raise_errs
 
 # Optimize
 # logging._srcfile = None

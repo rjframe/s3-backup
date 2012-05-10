@@ -19,8 +19,6 @@
 # TODO: Write cron example in Readme
 
 # TODO: Place these in /etc/s3backup.cfg or ~/.s3backup.cfg
-# TODO: Test with symbolic links (probably have a couple of issues)
-# TODO: Test on Windows
 # TODO: Find a good os.nice value so we don't slow things down on a busy
 # system
 
@@ -42,11 +40,11 @@ else:
 import os
 
 # Suite version
-version = '0.6'
+version = '0.6.2'
 
 # Company / software name. Used as prefix for logging, eg:
 # name.s3Backup ....
-company = "name"
+company = 'name'
 
 # === AWS Settings === #
 
@@ -68,6 +66,7 @@ monthly_backup_list = os.path.join(base_dir, 'monthly.s3')
 
 dest_location = '/tmp/backup' # os.path.join(base_dir, 'backup') 
 log_file = os.path.join(base_dir, 's3backup.log')
+log_raise_errs = True # False for production
 
 # === Backup settings === #
 

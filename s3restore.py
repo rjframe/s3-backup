@@ -292,7 +292,11 @@ Previous commands: where "number" is the number printed on the listing.
             config.dest_location)
     log.debug('Archive: %s' % archive)
 
-    tar = tarfile.open(archive)
+    try:
+        tar = tarfile.open(archive)
+    except IOError:
+        log.critical('The archive %s does not exist.' % archive)
+
     lst = tar.getmembers()
 
     lst_to_extract = do_browse_shell(lst)
@@ -335,7 +339,12 @@ def get_restore_archive(bucket, schedule, date, path):
     import boto.exception
 
     key, name = build_key(bucket, schedule, date)
-    is_encrypted = key.get_metadata('enc')
+    try:
+        # Throws AttributeError if the key doesn't exist
+        is_encrypted = key.get_metadata('enc')
+    except AttributeError:
+        log.debug('The key "enc" does not exist.')
+        is_encrypted = False
     
     if os.path.isdir(path):
         archive_path = os.path.join(path, name)
@@ -356,6 +365,10 @@ def get_restore_archive(bucket, schedule, date, path):
     except boto.exception.S3ResponseError:
         log.error('The archive %s does not exist.' % key.key)
         exit(1)
+    except AttributeError:
+        log.info('There is not a %s backup on %s.' % (schedule, date))
+        exit(1)
+    
     return archive_path, is_encrypted
 
 

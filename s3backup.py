@@ -87,7 +87,6 @@ def create_archive(files):
     """Creates an archive of the given files and stores them in
     the location specified by config.destination. Returns the full path of
     the archive."""
-    import tarfile
 
     try:
         if not os.path.exists(config.dest_location):
@@ -104,8 +103,15 @@ def create_archive(files):
 
     archive_name = ('bak' + time.strftime('%Y%m%d') + archive_type)
     archive_name = os.path.join(config.dest_location, archive_name)
+    create_tar(archive_name, files, mode)
+
+    return archive_name, archive_type
+
+def create_tar(archive, files, mode):
+    import tarfile
+
     try:
-        with tarfile.open(archive_name, mode) as tar:
+        with tarfile.open(archive, mode) as tar:
             for f in files:
                 f = f.strip()
                 if os.path.exists(f):
@@ -119,8 +125,6 @@ def create_archive(files):
         log.critical('There was an error creating the backup archive. '
                 'Please try again.')
         sys.exit(1)
-
-    return archive_name, archive_type
 
 
 def send_file(path, tar_type, backup_schedule):

@@ -19,6 +19,8 @@
 # TODO: Write cron example in Readme
 
 # TODO: Place these in /etc/s3backup.cfg or ~/.s3backup.cfg
+# TODO: Test with symbolic links (probably have a couple of issues)
+# TODO: Test on Windows
 # TODO: Find a good os.nice value so we don't slow things down on a busy
 # system
 
@@ -40,11 +42,11 @@ else:
 import os
 
 # Suite version
-version = '0.6.2'
+version = '0.8'
 
 # Company / software name. Used as prefix for logging, eg:
 # name.s3Backup ....
-company = 'name'
+company = 'test'
 
 # === AWS Settings === #
 
@@ -83,6 +85,5 @@ pass_hash.update(enc_password)
 enc_key = pass_hash.digest()[0:32] # Use the first 32 bits
 enc_piece_size = 1024*64
 
-# Supported compression methods are none, gz, and bz2
-# TODO: Implement zip compression
+# Supported compression methods are none, gz, and bz2, zip
 compression_method = 'bz2'

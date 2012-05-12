@@ -20,7 +20,7 @@ from sys import exit
 import config
 import log
 
-version = '1.0'
+version = '1.1'
 
 log = log.get_logger('s3restore')
 
@@ -36,8 +36,6 @@ def main():
 def handle_download(bucket, schedule, date, dest):
     ''' Handles the downloading and decrypting of the archive.'''
    
-    import tarfile
-
     try:
         if dest != None:
             archive, is_enc = get_restore_archive(bucket, schedule,
@@ -48,8 +46,6 @@ def handle_download(bucket, schedule, date, dest):
         
         if is_enc:
             archive = decrypt(archive)
-            log.debug('Archive is valid tar file: {}'.format(
-                tarfile.is_tarfile(archive)))
     except:
         raise
     return archive
@@ -58,7 +54,48 @@ def handle_download(bucket, schedule, date, dest):
 def run_full_restore(args):
     '''Executes the subcommand "full-restore".'''
 
-    import tarfile
+    def do_restore(archive):
+        '''Restores a tar archive'''
+        if config.compression_method == 'zip':
+            import zipfile
+            arc = zipfile.ZipFile(archive, 'r')
+        else:
+            import tarfile
+            arc = tarfile.open(archive, 'r')
+
+        if args.force_no_overwrite:
+            # Don't overwrite existing files.
+            if config.compression_method == 'zip':
+                files = arc.namelist()
+            else:
+                files = arc.getnames()
+            for f in files:
+                filepath = join(root, f)
+
+                if not exists(filepath):
+                    log.info('Extracting %s' % f)
+                    arc.extract(f, root)
+                else:
+                    log.info('%s exists. Not restoring.' % f)
+
+        elif args.force == True:
+            # Write/overwrite everything
+            arc.extractall(root)
+        else:
+            # Ask for each file
+            if config.compression_method == 'zip':
+                files = arc.namelist()
+            else:
+                files = arc.getnames()
+            for f in files:
+                do_it = raw_input('Restore %s? [y|n] ' % f)
+                if do_it.lower() == 'y':
+                    arc.extract(f, root)
+        
+        arc.close()
+ 
+    # BEGIN do_full_restore main body
+
     from os.path import exists, join
     from sys import platform
 
@@ -84,30 +121,7 @@ def run_full_restore(args):
     else:
         root = '/'
 
-    tar = tarfile.open(archive, 'r')
-
-    if args.force_no_overwrite:
-        # Don't overwrite existing files.
-        files = tar.getnames()
-        for f in files:
-            filepath = join(root, f)
-
-            if not exists(filepath):
-                log.info('Extracting %s' % f)
-                tar.extract(f, root)
-            else:
-                log.info('%s exists. Not restoring.' % f)
-
-    elif args.force == True:
-        # Write/overwrite everything
-        tar.extractall(root)
-    else:
-        # Ask for each file
-        files = tar.getnames()
-        for f in files:
-            do_it = raw_input('Restore %s? [y|n] ' % f)
-            if do_it.lower() == 'y':
-                tar.extract(f, root)
+    do_restore(archive)
 
 
 def run_browse_files(args):
@@ -396,7 +410,15 @@ def build_key(bucket, backup_type, backup_date):
             log.error('Invalid archive filename; last backup not known.')
             exit(1)
 
-    extension = 'tar.bz2' 
+    if config.compression_method == 'zip':
+        extension = 'zip'
+    elif config.compression_method == 'gz':
+        extension = 'tar.gz'
+    elif config.compression_method == 'bz2':
+        extension = 'tar.bz2'
+    elif config.compression_method == 'none':
+        extension = 'tar'
+
     backup_name = ('%s.%s' % (date, extension))
     keyname = '%s/%s/%s' % (config.machine_name, backup_type,
             backup_name)

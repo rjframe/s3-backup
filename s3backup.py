@@ -24,7 +24,7 @@ import config
 import log
 import encrypt
 
-version = '0.8.1'
+version = '0.9'
 
 log = log.get_logger('s3backup')
 
@@ -94,20 +94,50 @@ def create_archive(files):
     except OSError:
         log.critical('Cannot create directory %s' % config.dest_location)
         sys.exit(1)
-    
-    archive_type = '.tar'
-    mode = 'w:'
-    if config.compression_method != 'none':
-        archive_type = archive_type + '.' + config.compression_method
-        mode += config.compression_method
+
+    if config.compression_method == 'zip':
+        archive_type = '.zip'
+    else:
+        archive_type = '.tar'
+        mode = 'w:'
+        if config.compression_method != 'none':
+            archive_type = archive_type + '.' + config.compression_method
+            mode += config.compression_method
 
     archive_name = ('bak' + time.strftime('%Y%m%d') + archive_type)
     archive_name = os.path.join(config.dest_location, archive_name)
-    create_tar(archive_name, files, mode)
+   
+    if config.compression_method == 'zip':
+        create_zip(archive_name, files)
+    else:
+        create_tar(archive_name, files, mode)
 
     return archive_name, archive_type
 
+
+def create_zip(archive, files):
+    '''Creates a zip file containing the files being backed up.'''
+    import zipfile
+
+    try:
+        with zipfile.ZipFile(archive, 'w') as zipf:
+            zipf.comment = 'Created by s3-backup'
+            for f in files:
+                f = f.strip()
+                if os.path.exists(f):
+                    zipf.write(f)
+                    log.debug('Added %s.' % f)
+                else:
+                    log.error('%s does not exist.' % f)
+    except zipfile.BadZipfile:
+        # I assume this only happens on reads?
+        log.critical('The zip file is corrupt.')
+    except zipfile.LargeZipFile:
+        log.critical('The zip file is greater than 2 GB.'
+                ' Enable zip64 functionality.')
+
 def create_tar(archive, files, mode):
+    '''Creates a tar archive of the files being backed up.'''
     import tarfile
 
     try:
@@ -117,6 +147,8 @@ def create_tar(archive, files, mode):
                 if os.path.exists(f):
                     tar.add(f)
                     log.debug('Added %s.' % f)
+                else:
+                    log.error('%s does not exist.' % f)
     except tarfile.CompressionError:
         log.critical('There was an error compressing the backup archive. '
                 'Please try again.')

@@ -34,15 +34,18 @@ def main():
 
     parser = argparse.ArgumentParser(description='''Creates archives of
             files according to a cron-determined schedule.''')
-    parser.add_argument('schedule', choices=['daily', 'weekly', 'monthly'])
+    parser.add_argument('schedule', choices=['daily', 'weekly', 'monthly'],
+            help='Determines which backup file to use.')
+    parser.add_argument('--follow-symlinks', action='store_true',
+            help='If given, follows symbolic links.')
     parser.add_argument('--version', action='version', version='s3backup '
             '%s; Suite version %s' % (version, config.version))
     args = parser.parse_args()
 
-    do_backup(args.schedule)
+    do_backup(args.schedule, args.follow_symlinks)
 
 
-def do_backup(schedule):
+def do_backup(schedule, follow_links):
     '''Handles the backup.'''
     
     from shutil import rmtree
@@ -56,8 +59,8 @@ def do_backup(schedule):
 
     try:
         files = read_file_list(backup_list)
-        archive_path, tar_type = create_archive(files)
-        if config.enc_backup:
+        archive_path, tar_type = create_archive(files, follow_links)
+        if config.enc_backup == True:
             # We don't add the enc extension to the key - the metadata
             # will tell us whether the archive is encrypted.
             enc_file = utils.encrypt.encrypt_file(config.enc_key,
@@ -68,7 +71,8 @@ def do_backup(schedule):
         else: # Not encrypting
             send_file(archive_path, tar_type, schedule)
 
-        if config.delete_archive_when_finished:
+        if config.delete_archive_when_finished == True:
+            log.debug('Deleting archive.')
             rmtree(config.dest_location)
     except IOError:
         log.critical('Cannot open file: %s' % backup_list)
@@ -83,7 +87,7 @@ def read_file_list(flist):
     return data
 
 
-def create_archive(files):
+def create_archive(files, follow_links):
     """Creates an archive of the given files and stores them in
     the location specified by config.destination. Returns the full path of
     the archive."""
@@ -108,16 +112,21 @@ def create_archive(files):
     archive_name = os.path.join(config.dest_location, archive_name)
    
     if config.compression_method == 'zip':
-        create_zip(archive_name, files)
+        create_zip(archive_name, files, follow_links)
     else:
-        create_tar(archive_name, files, mode)
+        create_tar(archive_name, files, mode, follow_links)
 
     return archive_name, archive_type
 
 
-def create_zip(archive, files):
+def create_zip(archive, files, follow_links):
     '''Creates a zip file containing the files being backed up.'''
     import zipfile
+
+    # We don't yet support following symbolic links - we have to implement
+    # it manually
+    if follow_links == True:
+        log.critical('Cannot follow symbolic links with zip compression.')
 
     try:
         with zipfile.ZipFile(archive, 'w') as zipf:
@@ -136,12 +145,12 @@ def create_zip(archive, files):
         log.critical('The zip file is greater than 2 GB.'
                 ' Enable zip64 functionality.')
 
-def create_tar(archive, files, mode):
+def create_tar(archive, files, mode, follow_links):
     '''Creates a tar archive of the files being backed up.'''
     import tarfile
 
     try:
-        with tarfile.open(archive, mode) as tar:
+        with tarfile.open(archive, mode, dereference=follow_links) as tar:
             for f in files:
                 f = f.strip()
                 if os.path.exists(f):

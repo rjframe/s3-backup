@@ -18,14 +18,61 @@
 # Schedule via cron (win: Task Manager) (see README)
 # TODO: Write cron example in Readme
 
-# TODO: Place these in /etc/s3backup.cfg or ~/.s3backup.cfg
 # TODO: Test with symbolic links (probably have a couple of issues)
 # TODO: Test on Windows
 # TODO: Find a good os.nice value so we don't slow things down on a busy
 # system
 
-pass_hash = 'SHA512' # MD5, SHA, SHA256
+from ConfigParser import SafeConfigParser
+import os
 
+scp = SafeConfigParser()
+scp.read('s3backup.conf')
+
+# Suite version
+version = '0.8'
+
+# === Company Settings === #
+
+# Company / software name. Used as prefix for logging, eg:
+# name.s3Backup ....
+company = scp.get('Company', 'company')
+
+# === AWS Settings === #
+
+# Read the keys from a file; The first is the access key, the second is
+# the secret key
+keypath = scp.get('AWS', 'keypath')
+with open(keypath, 'r') as inf:
+    aws_access_key_id = inf.readline().strip()
+    aws_secret_access_key = inf.readline().strip()
+
+bucket = scp.get('AWS', 'bucket_name')
+machine_name = scp.get('AWS', 'machine_name')
+
+# === Directory / Filesystem settings === #
+
+base_dir = scp.get('Directory', 'base_directory')
+daily_backup_list = os.path.join(base_dir, scp.get('Directory',
+                'daily_list'))
+weekly_backup_list = os.path.join(base_dir, scp.get('Directory',
+                'weekly_list'))
+monthly_backup_list = os.path.join(base_dir, scp.get('Directory',
+                'monthly_list')) 
+
+dest_location = scp.get('Directory', 'destination')
+log_file = scp.get('Directory', 'log_path')
+
+# === Backup settings === #
+
+log_raise_errs = scp.get('Backup', 'raise_log_errors')
+
+# Note: this deletes the entire dest_location folder
+delete_archive_when_finished = scp.get('Backup', 'delete_archive')
+
+pass_hash = scp.get('Backup', 'passwd_hash_type')
+
+# Import the proper module and initialize pass_hash
 if pass_hash == 'SHA512':
     from Crypto.Hash import SHA512
     pass_hash = SHA512.new()
@@ -38,52 +85,14 @@ elif pass_hash == 'SHA256':
 else:
     from Crypto.Hash import SHA
     pass_hash = SHA.new()
-
-import os
-
-# Suite version
-version = '0.8'
-
-# Company / software name. Used as prefix for logging, eg:
-# name.s3Backup ....
-company = 'test'
-
-# === AWS Settings === #
-
-aws_access_key_id = ''
-aws_secret_access_key = ''
-bucket = 'mybucket'
-
-machine_name = 'test1'
-
-
-# === Directory / Filesystem settings === #
-
-# If base_dir is specified, the others are relative to it; if it is None,
-# the others need to be absolute paths
-base_dir = '/some/dir'
-daily_backup_list = os.path.join(base_dir, 'daily.s3')
-weekly_backup_list = os.path.join(base_dir, 'weekly.s3')
-monthly_backup_list = os.path.join(base_dir, 'monthly.s3')
-
-dest_location = '/tmp/backup' # os.path.join(base_dir, 'backup') 
-log_file = os.path.join(base_dir, 's3backup.log')
-log_raise_errs = True # False for production
-
-# === Backup settings === #
-
-# Note: this deletes the entire dest_location folder
-delete_archive_when_finished = True
-
-# TODO: Allow supplying the password on the command-line when restoring
-
+    
 # We hash a memorable password for the encryption key
-enc_backup = True
-enc_password = 'Some text to be hashed'
+enc_backup = scp.get('Backup', 'use_encryption')
+enc_password = scp.get('Backup', 'encryption_password')
 pass_hash.update(enc_password)
 
 enc_key = pass_hash.digest()[0:32] # Use the first 32 bits
 enc_piece_size = 1024*64
 
-# Supported compression methods are none, gz, and bz2, zip
-compression_method = 'bz2'
+# Supported compression methods are none, gz, bz2, and zip
+compression_method = scp.get('Backup', 'compression')

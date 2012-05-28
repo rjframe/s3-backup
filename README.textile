@@ -16,49 +16,25 @@ bq. $ pip install boto<br />$ pip install pycrypto
 
 Installing pycrypto in this manner requires a C compiler on the system. Precompiled binaries are available online.
 
-All system configuration is in config.py - set your AWS access and secret key, directories, and a few other settings.
+All system configuration is in s3backup.conf - set your AWS access and secret key, directories, and a few other settings. See the wiki for detailed instructions - I'm just going to overview a few things here.
 
-bq. Set pass_hash to your desired hash type.
+If you're installing this on public or psuedo-public computers, create AWS sub-accounts and use those keys for enhanced security. Also manage access permissions from AWS - s3backup doesn't yet do this (coming soon).
 
-If using pycrypto < 2.4, use either MD5 or SHA. If >=2.4, anything works.
+The keys should be placed in a keys.s3 file (configurable). The first line is the access key, the second line is the secret key. They should not be labeled. Any lines past the first two are ignored, so you can add random text if you want.
 
-bq. company = 'name'
+If you want to use encryption, the password is hashed for the encryption key. If you use pycrypto <2.4, you're limited to SHA and MD5. Later versions can also use SHA256 and SHA512.
 
-"company" is used for a logging prefix.
-
-bq. Set aws_access_key_id and aws_secret_key to your account keys.
-
-If you're installing this on public or psuedo-public computers, create sub-accounts and use those keys for enhanced security. Also manage access permissions from AWS - s3backup doesn't yet do this.
-
-bq. Enter your bucket name and machine name.
-
-s3bucket organizes uploads to effectively organize backups from multiple machines across multiple locations. The bucket name must be unique across all of AWS. If you only backup one machine the machine name is unimportant (enter something; I haven't tested it with None.
-
-bq. Next create the backup lists and point the list variables to it - the comments in the code explain this step.
-
-bq. Set the encryption settings.
-
-If you want to use encryption, set the password. The password is hashed for the encryption key.
-
-bq. Set the directory to store the archive in.
-
-If you're keeping a local copy of the backup, specify its (default) intended location. Otherwise, it's fine to keep it in /tmp.
-
-Next set a few miscellaneous settings.
-
-bq. compression_method can be one of 'none', 'gz', or 'bz2' (default)<br />Set delete_archive_when_finished to True if you don't want to keep a local copy of the archive.
-
-If you want to upload individual files instead of an archive use s3put.py
+If you want to upload individual files instead of an archive use s3put.py. Restoring from s3put is not yet supported - you'll have to use an S3 browser.
 
 h3. Utility Descriptions and Usage
 
-Any file prefixed by "s3" can be run as a standalone utility. Use --help for detailed usage.
+Any file prefixed by "s3" can be run as a standalone utility (except the configuration file, naturally). Use --help for detailed usage for any utility.
 
 *s3backup.py* - creates an archive, encrypts it if desired, and uploads that archive to AWS. Intended for automated scheduling, but it can also be called anytime.
 
 bq. Example: python s3backup.py daily
 
-*s3put.py* - uploads individual files. With the --list flag, the provided file should be a list of files; it uploads all files in the list. It can be automated or run as desired. Encryption and compression are not yet supported. s3put.py will eventually be the basis for incremental backups.
+*s3put.py* - uploads individual files. With the --list flag, the provided file should be a list of files separated by new lines; it uploads all files in the list. It can be automated or run as desired. Encryption and compression are not yet supported. s3put.py will eventually be the basis for incremental backups.
 
 bq. Example: python s3put.py /some/file
 

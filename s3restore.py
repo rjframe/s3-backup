@@ -44,7 +44,7 @@ def handle_download(bucket, schedule, date, dest):
             archive, is_enc = get_restore_archive(bucket, schedule,
                     date, config.dest_location)
         
-        if is_enc:
+        if is_enc == True:
             archive = decrypt(archive)
     except:
         raise

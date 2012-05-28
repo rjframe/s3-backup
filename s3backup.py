@@ -21,12 +21,12 @@ import sys
 import time
 
 import config
-import log
-import encrypt
+import utils.log
+import utils.encrypt
 
 version = '0.9'
 
-log = log.get_logger('s3backup')
+log = utils.log.get_logger('s3backup')
 
 
 def main():
@@ -60,7 +60,7 @@ def do_backup(schedule):
         if config.enc_backup:
             # We don't add the enc extension to the key - the metadata
             # will tell us whether the archive is encrypted.
-            enc_file = encrypt.encrypt_file(config.enc_key,
+            enc_file = utils.encrypt.encrypt_file(config.enc_key,
                     archive_path, config.enc_piece_size)
             send_file(enc_file, tar_type, schedule)
             # Delete the plaintext local version
@@ -166,7 +166,7 @@ def send_file(path, tar_type, backup_schedule):
 
     key = s3connect()
     key.key = create_key(tar_type, backup_schedule)
-    key.set_metadata('sha512', encrypt.getFileHash(path))
+    key.set_metadata('sha512', utils.encrypt.getFileHash(path))
     key.set_metadata('enc', str(config.enc_backup))
     log.debug('key: %s' % key)
     log.debug('meta:enc: %s' % key.get_metadata('enc'))

@@ -17,14 +17,12 @@
 
 import os.path
 
-#from Crypto.Cipher import AES
-
-import log
+import utils.log
 import config
-from encrypt import getFileHash
+from utils.encrypt import getFileHash
 
 
-log = log.get_logger('s3put')
+log = utils.log.get_logger('s3put')
 
 def main():
     import argparse

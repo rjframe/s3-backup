@@ -18,11 +18,11 @@
 from sys import exit
 
 import config
-import log
+import utils.log
 
 version = '1.1'
 
-log = log.get_logger('s3restore')
+log = utils.log.get_logger('s3restore')
 
 # TODO: Allow restore from local archive
 
@@ -332,7 +332,7 @@ def decrypt(archive):
     '''Decrypts the given file. It deletes the encrypted version and
     returns the path to the decrypted file, which is the encrypted filename
     with a '.d' extension appended.'''
-    from encrypt import decrypt_file
+    from utils.encrypt import decrypt_file
     from os import remove
 
     decrypted = archive + '.d'

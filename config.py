@@ -15,11 +15,7 @@
 # limitations under the License.
 
 
-# Schedule via cron (win: Task Manager) (see README)
 # TODO: Write cron example in Readme
-
-# TODO: Test with symbolic links (probably have a couple of issues)
-# TODO: Test on Windows
 # TODO: Find a good os.nice value so we don't slow things down on a busy
 # system
 
@@ -30,7 +26,7 @@ scp = SafeConfigParser()
 scp.read('s3backup.conf')
 
 # Suite version
-version = '0.8'
+version = '0.9'
 
 # === Company Settings === #
 

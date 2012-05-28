@@ -24,7 +24,7 @@ import config
 import utils.log
 import utils.encrypt
 
-version = '0.9'
+version = '1.0'
 
 log = utils.log.get_logger('s3backup')
 

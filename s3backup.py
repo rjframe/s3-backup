@@ -37,7 +37,8 @@ def main():
     parser.add_argument('schedule', choices=['daily', 'weekly', 'monthly'],
             help='Determines which backup file to use.')
     parser.add_argument('--follow-symlinks', action='store_true',
-            help='If given, follows symbolic links.')
+            help='''If given, follows symbolic links. Note that zip
+            archives always follow links.''')
     parser.add_argument('--version', action='version', version='s3backup '
             '%s; Suite version %s' % (version, config.version))
     args = parser.parse_args()
@@ -112,23 +113,20 @@ def create_archive(files, follow_links):
     archive_name = os.path.join(config.dest_location, archive_name)
    
     if config.compression_method == 'zip':
-        create_zip(archive_name, files, follow_links)
+        # zipfile always follows links
+        create_zip(archive_name, files)
     else:
         create_tar(archive_name, files, mode, follow_links)
 
     return archive_name, archive_type
 
 
-def create_zip(archive, files, follow_links):
+def create_zip(archive, files)
     '''Creates a zip file containing the files being backed up.'''
     import zipfile
 
-    # We don't yet support following symbolic links - we have to implement
-    # it manually
-    if follow_links == True:
-        log.critical('Cannot follow symbolic links with zip compression.')
-
     try:
+        # zipfile always follows links
         with zipfile.ZipFile(archive, 'w') as zipf:
             zipf.comment = 'Created by s3-backup'
             for f in files:
@@ -138,8 +136,11 @@ def create_zip(archive, files, follow_links):
                     log.debug('Added %s.' % f)
                 else:
                     log.error('%s does not exist.' % f)
+                
+                if zipf.testzip() != None:
+                    log.error('An error occured creating the zip archive.')
     except zipfile.BadZipfile:
-        # I assume this only happens on reads?
+        # I assume this only happens on reads? Just in case...
         log.critical('The zip file is corrupt.')
     except zipfile.LargeZipFile:
         log.critical('The zip file is greater than 2 GB.'

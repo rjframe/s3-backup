@@ -58,6 +58,8 @@ monthly_backup_list = os.path.join(base_dir, scp.get('Directory',
 
 dest_location = scp.get('Directory', 'destination')
 log_file = scp.get('Directory', 'log_path')
+hash_file_path = scp.get('Directory', 'hash_file_path')
+
 
 # === Backup settings === #
 

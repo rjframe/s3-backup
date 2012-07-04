@@ -24,8 +24,12 @@ from utils.encrypt import getFileHash
 
 log = utils.log.get_logger('s3put')
 
+version = '0.7'
+
 def main():
     import argparse
+    import utils.aws
+    import utils.filesystem 
 
     parser = argparse.ArgumentParser(description='''Transfers the given
             file to Amazon S3.''')
@@ -36,15 +40,14 @@ def main():
     parser.add_argument('file_path')
     args = parser.parse_args()
     
-    key = s3connect()
-    key.key = create_key(os.path.basename(args.file_path))
+    key = utils.aws.s3connect()
+    key.key = utils.aws.create_file_key(os.path.basename(args.file_path))
     if args.list:
         # key.key is now a folder. We'll modify the key with each upload to
         # place the files within it
         base = os.path.dirname(key.key)
-        
-        with open(args.file_path, 'r') as flist:
-            files = flist.readlines()
+
+        files = utils.filesystem.read_file_list(args.file_path)
         for f in files:
             f = f.strip()
             key.key = '/' + base + f
@@ -52,7 +55,7 @@ def main():
             if os.path.isdir(f):
                 upload_dir_tree(f, key)
             else:
-                key.set_metadata('sha512', getFileHash(f))
+                key.set_metadata('hash', getFileHash(f))
                 key.set_contents_from_filename(f)
 
 
@@ -69,34 +72,13 @@ def upload_dir_tree(dir_tree, key):
                 log.debug('reg f:  %s' % fp)
                 # For each file, update the key with the path
                 key.key = k + os.path.basename(fp)
-                key.set_metadata('sha512', getFileHash(fp))
+                key.set_metadata('hash', getFileHash(fp))
                 key.set_contents_from_filename(fp)
 
     # Execute visit in each directory
     thekey = key.key
     log.debug('uploading tree %s', dir_tree)
     os.path.walk(dir_tree, visit, None)
-
-
-def create_key(filename):
-    '''Creates the key to use for S3. Key will be
-    [machine_name]/YYYYMMDD/filename'''
-    import time
-    return ('%s/%s/%s' % (config.machine_name, time.strftime('%Y%m%d'), 
-        filename))
-
-
-def s3connect():
-    '''Create/open a bucket and return the key'''
-    import boto
-    import boto.s3.key
-
-    s3 = boto.connect_s3(config.aws_access_key_id,
-            config.aws_secret_access_key)
-    bucket = s3.create_bucket(config.bucket)
-    key = boto.s3.key.Key(bucket)
-    
-    return key
 
 
 if __name__ == '__main__':

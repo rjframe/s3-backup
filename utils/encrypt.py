@@ -74,7 +74,7 @@ def decrypt_file(key, encrypted_file, decrypted_file, piece_size):
         return False
 
 
-def getFileHash(file, algorithm='MD5'):
+def get_file_hash(file, algorithm='MD5'):
     '''Returns a hexadecimal hash of the given file. Currently supported
     algorithms are "SHA256", "SHA512" and "MD5"'''
 

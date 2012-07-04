@@ -2,52 +2,10 @@ h2. s3backup
 
 s3backup is a collection of utilities to generate automatic cloud backups (scheduled via cron/Task Scheduler/launchd) through Amazon.com's AWS S3 service. The bucket / key naming system is such that multiple machines at multiple locations can be backed up, easily organized, and easily restored.
 
-The suite has been tested on Linux (32-bit) and Windows 7 (64-bit w/ 64-bit Python). Mac OS X testing coming soon.
+The suite has been tested on Linux (32-bit) and Windows 7 (64-bit w/ 64-bit Python).
 
 AES encryption via pycrypto ensures all data is secure while off-site. Note: Version 0.5 begins using a hashed password for encryption, so it is incompatible with previous versions.
 
-The file's hash is calculated for eventual verification and incremental backups.
+The file's hash is calculated for verification and incremental backups (to be implemented soon).
 
-h3. Set up
-
-s3backup requires boto and pycrypto to run -
-
-bq. $ pip install boto<br />$ pip install pycrypto
-
-Installing pycrypto in this manner requires a C compiler on the system. Precompiled binaries are available online.
-
-All system configuration is in s3backup.conf - set your AWS access and secret key, directories, and a few other settings. See the wiki for detailed instructions - I'm just going to overview a few things here.
-
-If you're installing this on public or psuedo-public computers, create AWS sub-accounts and use those keys for enhanced security. Also manage access permissions from AWS - s3backup doesn't yet do this (coming soon).
-
-The keys should be placed in a keys.s3 file (configurable). The first line is the access key, the second line is the secret key. They should not be labeled. Any lines past the first two are ignored, so you can add random text if you want.
-
-If you want to use encryption, the password is hashed for the encryption key. If you use pycrypto <2.4, you're limited to SHA and MD5. Later versions can also use SHA256 and SHA512.
-
-If you want to upload individual files instead of an archive use s3put.py. Restoring from s3put is not yet supported - you'll have to use an S3 browser.
-
-h3. Utility Descriptions and Usage
-
-Any file prefixed by "s3" can be run as a standalone utility (except the configuration file, naturally). Use --help for detailed usage for any utility.
-
-*s3backup.py* - creates an archive, encrypts it if desired, and uploads that archive to AWS. Intended for automated scheduling, but it can also be called anytime.
-
-bq. Example: python s3backup.py daily
-
-*s3put.py* - uploads individual files. With the --list flag, the provided file should be a list of files separated by new lines; it uploads all files in the list. It can be automated or run as desired. Encryption and compression are not yet supported. s3put.py will eventually be the basis for incremental backups.
-
-bq. Example: python s3put.py /some/file
-
-*s3restore.py* - restores backups created by s3backup.py and s3put.py.
-
-Subcommands (--help for more details):
-
-full-restore - Downloads an archive and restores all files contained within. The --force flag overwrites all files without prompting and --force-no-overwrite restores all files that do not exist. No flags causes a prompt for each file.
-
-bq. Example: python s3restore.py full-restore daily "05 09 2012" --force
-
-browse-files - Provides an interface to browse an archive and restore only the selected files. The --archives flag will list all available archives and allow selecting, though it is not yet implemented. the --root flag has not yet been tested on Windows.
-
-bq. Example python s3restore.py browse-files -s daily -d "05 09 2012"
-
-*s3usercfg.py* - creates and configures an AWS user. Not fully implemented.
+See the wiki at "GitHub":http://github.com/rjframe/s3-backup for detailed instructions.

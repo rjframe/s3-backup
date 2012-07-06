@@ -38,7 +38,7 @@ LOGGING = {
             'level': 'DEBUG', # 'WARN',
             'class': 'logging.FileHandler',
             'formatter': 'withtime',
-            'filename': 'test_env/s3backup.log'
+            'filename': log_file
         },
         'toconsole': {
             'level': 'DEBUG',

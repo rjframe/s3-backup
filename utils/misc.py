@@ -39,12 +39,17 @@ def add_file_hash(archive_name, filename):
 
     hash_file = get_hash_file_path(archive_name)
 
+    if not os.path.exists(hash_file):
+        mode = 'w'
+    else:
+        mode = 'a'
+
     if os.path.isdir(filename):
         import os
-        with open(hash_file, 'a') as hf:
+        with open(hash_file, mode) as hf:
             for root, dirs, files in os.walk(hash_file):
                 for f in files:
                     hf.write(get_hash_line(os.path.join(root, f), hash))
     else:
-        with open(hash_file, 'a') as hf:
+        with open(hash_file, mode) as hf:
             hf.write(get_hash_line(filename, hash))
